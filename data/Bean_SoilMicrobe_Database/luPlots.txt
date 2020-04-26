@@ -1,0 +1,13 @@
+﻿Plot	Block	Treatment
+1	1	NO
+2	1	LO
+3	1	HI
+4	2	NO
+5	2	LO
+6	2	HI
+7	3	LO
+8	3	NO
+9	3	HI
+10	4	HI
+11	4	LO
+12	4	NO
