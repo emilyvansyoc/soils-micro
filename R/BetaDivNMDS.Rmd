@@ -1,0 +1,221 @@
+---
+title: "BetaDiversity2018"
+author: "Emily Bean"
+date: "March 6, 2020"
+output: html_document
+---
+
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warnings = FALSE)
+
+## READ IN AND PREPARE DATA
+if(!require(ggordiplots)) {
+  require(devtools)
+  devtools::install_github("jfq3/ggordiplots")
+  require(ggordiplots)
+}
+require(vegan)
+require(tidyr)
+require(dplyr)
+require(phyloseq)
+require(pairwiseAdonis)
+# load locally for now since the GitHub file is huge
+load("C:/Users/emily/OneDrive - University of Wyoming/Thesis Work/grazing_soil_microbes/data/allBetaDiv_PSobjects_UNITE.RData")
+```
+
+### 2018
+
+##### ITS
+```{r}
+# Add EEA C cycling
+# also make sure ADONIS variables are factors
+sdITS18 <- sdITS18 %>% 
+  mutate(Ccycl = AG + BG + BX + CBH,
+         Ncycl = NAG + LAP,
+         CNrat = Ccycl / Ncycl,
+         Plot = as.factor(Plot),
+         Block = as.factor(Block))
+
+## conglomerate OTUs by Phyla and add to metadata
+# agglomerate data by Phyla
+tg <- tax_glom(psITS18, taxrank = rank_names(psITS18)[2], NArm = TRUE)
+# name the phyla
+taxa_names(tg) <- tg@tax_table@.Data[,2]
+# make a dataframe
+df <- as.data.frame(otu_table(tg))
+# create relative abundance of Phyla for each sample
+dc <- decostand(df, method = "total", MARGIN = 1)
+# combine with sample data
+sdITS18 <- cbind(dc, sdITS18)
+
+# statistical testing
+dis <- distance(psITS18T, method = "bray")
+adonis(dis ~ sample_type + Treatment * GrazeTime,
+       data = sdITS18, permutations = 999) # all are significant except Interactions
+ad.pair <-  pairwise.adonis2(dis ~ sample_type + Treatment * GrazeTime,
+                        data = sdITS18,
+                        p.adjust.m = "bon", perm = 1000)
+
+# ordinate
+ord <- ordinate(psITS18T, method = "NMDS", distance = "bray", k = 2, 
+                trymax = 1000, previousBest = TRUE) 
+stressplot(ord, dis) #OK with 2 dimensions
+eft <- envfit(ord, env = sdITS18, perm = 1000, na.rm = TRUE)
+eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
+
+
+
+```
+
+
+
+```{r}
+### GGPLOT BY TREATMENT
+# pull NMDS coordinates
+sdITS18$NMDS1 <- ord$points[,1]
+sdITS18$NMDS2 <- ord$points[,2]
+# pull significant envfit objects to plots
+species.scores <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+species.scores$species <- row.names(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sdITS18$Treatment, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+## create in ggplot2
+ggplot(data = sdITS18, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, shape = GrazeTime, color = Treatment), size = 1) +
+  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  geom_text(data = species.scores, 
+            aes(x = NMDS1, y = NMDS2, label=species),
+            size = 3) +
+  ggtitle("ITS18: Treatment Ellipses")
+### GGPLOT BY GRAZETIME
+plot2 <-  gg_ordiplot(ord, groups = sdITS18$GrazeTime, label = FALSE, plot = FALSE)
+df_ell2 <- plot2$df_ellipse
+NMDS.mean2 <- plot2$df_mean.ord
+ord.data2 <- plot2$df_ord 
+ggplot(data = sdITS18, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell2, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, shape = GrazeTime, color = Treatment), size = 1) +
+  annotate("text",x = NMDS.mean2$x, y = NMDS.mean2$y,label=NMDS.mean2$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  geom_text(data = species.scores, 
+            aes(x = NMDS1, y = NMDS2, label=species),
+            size = 3) +
+  ggtitle("ITS 18: GrazeTime Ellipses")
+
+
+```
+
+```{r}
+# plot abundance barplot by Phylum
+TopNOTUs = names(sort(taxa_sums(tg), TRUE)[1:10])
+t10 = prune_taxa(TopNOTUs, tg)
+plot_bar(t10, "GrazeTime", fill = "Treatment", facet_grid = ~ Phylum)
+```
+
+##### 16S
+
+```{r}
+
+# Add EEA C cycling
+# also make sure ADONIS variables are factors
+sd16S18 <- sd16S18 %>% 
+  mutate(Ccycl = AG + BG + BX + CBH,
+         Ncycl = NAG + LAP,
+         CNrat = Ccycl / Ncycl,
+         Plot = as.factor(Plot),
+         Block = as.factor(Block))
+
+## conglomerate OTUs by Phyla and add to metadata
+# agglomerate data by Phyla
+tg <- tax_glom(ps16S18, taxrank = rank_names(ps16S18)[2], NArm = TRUE)
+# name the phyla
+taxa_names(tg) <- tg@tax_table@.Data[,2]
+# make a dataframe
+df <- as.data.frame(otu_table(tg))
+# create relative abundance of Phyla for each sample
+dc <- decostand(df, method = "total", MARGIN = 1)
+# combine with sample data
+sd16S18 <- cbind(dc, sd16S18)
+
+# statistical testing
+dis <- distance(ps16S18T, method = "bray")
+adonis(dis ~ sample_type + Treatment * GrazeTime,
+       data = sd16S18, permutations = 999) # all are significant except Interactions
+ad.pair <-  pairwise.adonis2(dis ~ sample_type + Treatment * GrazeTime,
+                        data = sd16S18,
+                        p.adjust.m = "bon", perm = 1000)
+
+# ordinate
+ord <- ordinate(ps16S18T, method = "NMDS", distance = "bray", k = 2, 
+                trymax = 1000, previousBest = TRUE) 
+stressplot(ord, dis) #OK with 2 dimensions
+eft <- envfit(ord, env = sd16S18, perm = 1000, na.rm = TRUE)
+eft # several phyla are significant
+```
+
+
+
+```{r}
+### GGPLOT BY TREATMENT
+# pull NMDS coordinates
+sd16S18$NMDS1 <- ord$points[,1]
+sd16S18$NMDS2 <- ord$points[,2]
+# pull significant envfit objects to plots
+species.scores <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+species.scores$species <- row.names(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sd16S18$Treatment, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+## create in ggplot2
+ggplot(data = sd16S18, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, shape = GrazeTime, color = Treatment), size = 1) +
+  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  geom_text(data = species.scores, 
+           aes(x = NMDS1, y = NMDS2, label=species),
+            size = 3) +
+  ggtitle("16S18: Treatment Ellipses")
+### GGPLOT BY GRAZETIME
+plot2 <-  gg_ordiplot(ord, groups = sd16S18$GrazeTime, label = FALSE, plot = FALSE)
+df_ell2 <- plot2$df_ellipse
+NMDS.mean2 <- plot2$df_mean.ord
+ord.data2 <- plot2$df_ord 
+ggplot(data = sd16S18, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell2, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, shape = GrazeTime, color = Treatment), size = 1) +
+  annotate("text",x = NMDS.mean2$x, y = NMDS.mean2$y,label=NMDS.mean2$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  geom_text(data = species.scores, 
+        aes(x = NMDS1, y = NMDS2, label=species),
+           size = 3) +
+  ggtitle("16S 18: GrazeTime Ellipses")
+```
+
+
+```{r}
+
+# plot abundance barplot by Phylum
+TopNOTUs = names(sort(taxa_sums(tg), TRUE)[1:10])
+t10 = prune_taxa(TopNOTUs, tg)
+plot_bar(t10, "GrazeTime", fill = "Treatment", facet_grid = ~ Phylum)
+
+```

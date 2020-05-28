@@ -7,6 +7,7 @@ theme_set(theme_bw())
 # read data
 dat <- read.table("https://github.com/EmilyB17/soils-micro/raw/master/data/2018CN.txt",
                   sep = "\t", header = TRUE) %>% 
+  # remove nitrate and mineral N
   dplyr::select(-c(NO3_mgkgdrysoil, mineralN_mgkgdrysoil)) %>% 
   mutate(GrazeTime = factor(GrazeTime, ordered = TRUE, levels = c("PRE", "24H", "1WK", "4WK"))) %>% 
   # REMOVE BLOCK 4
@@ -27,11 +28,17 @@ datlog <- datpd %>%
   pivot_longer(cols = c(NH4_mgkgdrysoil, NPOC_mgkgdrysoil, DON_mgkgdrysoil,
                         grav_mois),
                names_to = "param", values_to = "value") %>% 
+  # add PRE at 0
+  pivot_wider(names_from = diffTimeSeries, values_from = value) %>% 
+  mutate(PRE = 0) %>% 
+  pivot_longer(cols = c(PRE, diff_24H, diff_1WK, diff_4WK), names_to = "Time", values_to = "value") %>% 
+  
   # LOG TRANSFORMATION
   mutate(logvalue = log1p(value + 101)) %>% 
   dplyr::select(-value) %>% 
   # make horizontal
   pivot_wider(names_from = param, values_from = logvalue, names_prefix = "log_")
+
 
 ## get empty dataframes to fill as we go
 modelFit <- data.frame()
@@ -40,7 +47,7 @@ posthocTime <- data.frame()
 
 ## ---- NPOC (Dissolved organic carbon) ----
 
-npoc <- datlog %>% dplyr::select(Plot, Block, Treatment, diffTimeSeries, log_NPOC_mgkgdrysoil)
+npoc <- datlog %>% dplyr::select(Plot, Block, Treatment, Time, log_NPOC_mgkgdrysoil)
 
 # histogram
 hist(npoc$log_NPOC_mgkgdrysoil)
@@ -51,7 +58,7 @@ qqnorm(npoc$log_NPOC_mgkgdrysoil)
 qqline(npoc$log_NPOC_mgkgdrysoil)
 
 ## GLM
-mod <- glm(log_NPOC_mgkgdrysoil ~ diffTimeSeries * Treatment,
+mod <- glm(log_NPOC_mgkgdrysoil ~ Time * Treatment,
            data = npoc,
            family = gaussian(link = "identity"))
 # check residuals for normality
@@ -69,17 +76,17 @@ modelFit <-  rbind(modelFit,
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "NPOC",
-                               emmeans(mod, pairwise ~ Treatment | diffTimeSeries, type = "response")$contrasts))
+                               emmeans(mod, pairwise ~ Treatment | Time, type = "response")$contrasts))
 
 # post-hoc test with emmeans
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "NPOC",
-                                emmeans(mod, pairwise ~ diffTimeSeries | Treatment, type = "response")$contrasts))
+                                emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
 
 ### ---- NH4 (Ammonium) ----
 
 amm <- datlog %>% 
-  dplyr::select(Plot, Block, Treatment, diffTimeSeries, log_NH4_mgkgdrysoil)
+  dplyr::select(Plot, Block, Treatment, Time, log_NH4_mgkgdrysoil)
 
 # histogram
 hist(amm$log_NH4_mgkgdrysoil)
@@ -90,7 +97,7 @@ qqnorm(amm$log_NH4_mgkgdrysoil)
 qqline(amm$log_NH4_mgkgdrysoil)
 
 ## GLM
-mod <- glm(log_NH4_mgkgdrysoil ~ diffTimeSeries * Treatment,
+mod <- glm(log_NH4_mgkgdrysoil ~ Time * Treatment,
            data = amm,
            family = gaussian(link = "identity"))
 # check residuals for normality
@@ -108,17 +115,17 @@ modelFit <-  rbind(modelFit,
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "NH4",
-                               emmeans(mod, pairwise ~ Treatment | diffTimeSeries, type = "response")$contrasts))
+                               emmeans(mod, pairwise ~ Treatment | Time, type = "response")$contrasts))
 
 # post-hoc test with emmeans
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "NH4",
-                                emmeans(mod, pairwise ~ diffTimeSeries | Treatment, type = "response")$contrasts))
+                                emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
 
 ### ---- DON (dissolved organic nitrogen) ----
 
 don <- datlog %>% 
-  dplyr::select(Plot, Block, Treatment, diffTimeSeries, log_DON_mgkgdrysoil)
+  dplyr::select(Plot, Block, Treatment, Time, log_DON_mgkgdrysoil)
 
 # histogram
 hist(don$log_DON_mgkgdrysoil)
@@ -129,7 +136,7 @@ qqnorm(don$log_DON_mgkgdrysoil)
 qqline(don$log_DON_mgkgdrysoil)
 
 ## GLM
-mod <- glm(log_DON_mgkgdrysoil ~ diffTimeSeries * Treatment,
+mod <- glm(log_DON_mgkgdrysoil ~ Time * Treatment,
            data = don,
            family = gaussian(link = "identity"))
 # check residuals for normality
@@ -147,17 +154,17 @@ modelFit <-  rbind(modelFit,
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "DON",
-                               emmeans(mod, pairwise ~ Treatment | diffTimeSeries, type = "response")$contrasts))
+                               emmeans(mod, pairwise ~ Treatment | Time, type = "response")$contrasts))
 
 # post-hoc test with emmeans
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "DON",
-                                emmeans(mod, pairwise ~ diffTimeSeries | Treatment, type = "response")$contrasts))
+                                emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
 
 ### ---- GRAVIMETRIC MOISTURE ----
 
 grav <- datlog %>% 
-  dplyr::select(Plot, Block, Treatment, diffTimeSeries, log_grav_mois)
+  dplyr::select(Plot, Block, Treatment, Time, log_grav_mois)
 
 # histogram
 hist(grav$log_grav_mois)
@@ -168,8 +175,11 @@ qqnorm(grav$log_grav_mois)
 qqline(grav$log_grav_mois)
 
 ## GLM
-mod <- glm(log_grav_mois ~ diffTimeSeries * Treatment,
+mod <- glm(log_grav_mois ~ Time * Treatment,
            data = grav,
+           family = gaussian(link = "identity"))
+mod <- glm(log.moisture ~ Time * Treatment,
+           data = gravpd,
            family = gaussian(link = "identity"))
 # check residuals for normality
 shapiro.test(resid(mod)) # marginally normal
@@ -186,15 +196,15 @@ modelFit <-  rbind(modelFit,
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "GravMois",
-                               emmeans(mod, pairwise ~ Treatment | diffTimeSeries, type = "response")$contrasts))
+                               emmeans(mod, pairwise ~ Treatment | Time, type = "response")$contrasts))
 
 # post-hoc test with emmeans
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "GravMois",
-                                emmeans(mod, pairwise ~ diffTimeSeries | Treatment, type = "response")$contrasts))
+                                emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
 
 ### ---- write output tables ----
 
 
-write.table(posthocTime, "./data/GLM-posthoc-Time.txt", sep = "\t", row.names = FALSE)
-write.table(posthocTrt, "./data/GLM-posthoc-Treatment.txt", sep = "\t", row.names = FALSE)
+#write.table(posthocTime, "./data/GLM-posthoc-Time.txt", sep = "\t", row.names = FALSE)
+#write.table(posthocTrt, "./data/GLM-posthoc-Treatment.txt", sep = "\t", row.names = FALSE)
