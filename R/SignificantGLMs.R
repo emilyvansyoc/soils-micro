@@ -46,9 +46,9 @@ datv <- dat %>%
                                 HDG = "HI", LDG = "LO", NG = "NO"),
          Time = fct_recode(Time,
                            PRE = "PRE",
-                           post24H = "diff_24H",
-                           post1WK = "diff_1WK",
-                           post4WK = "diff_4WK"),
+                           `24H` = "diff_24H",
+                           `1WK` = "diff_1WK",
+                           `4WK` = "diff_4WK"),
          param = factor(param),
          param = fct_recode(param,
                             DON = "DON_mgkgdrysoil",
@@ -67,7 +67,8 @@ ggplot(data = datv,
                 width = 0.1) +
   labs(x = "Sampling Time", y = "% change from PRE") +
   scale_color_manual(values = treatmentcols) + 
-  facet_wrap(~param, scales = "free")
+  facet_wrap(~param, scales = "free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # save
 #ggsave("./data/plots/all-time-lineplot.png", plot = last_plot(), dpi = "print")

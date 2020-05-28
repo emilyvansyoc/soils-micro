@@ -116,9 +116,9 @@ dat <- enzlog %>%
                                 HDG = "HI", LDG = "LO", NG = "NO"),
          Time = fct_recode(Time,
                            PRE = "PRE",
-                           post24H = "diff_24H",
-                           post1WK = "diff_1WK",
-                           post4WK = "diff_4WK"))
+                           `24H` = "diff_24H",
+                           `1WK` = "diff_1WK",
+                           `4WK` = "diff_4WK"))
 
 
 
@@ -135,7 +135,8 @@ ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
   geom_hline(yintercept = 0, color = "black") +
   facet_wrap(~Type) +
   scale_color_manual(values = treatmentcols) +
-  labs(x = "Sampling Time", y = "% change from PRE")
+  labs(x = "Sampling Time", y = "% change from PRE")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # save
 #ggsave("./data/plots/enzymes-indiv-lineplot.png", plot = last_plot(), dpi = "print")
