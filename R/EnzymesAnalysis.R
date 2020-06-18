@@ -3,6 +3,7 @@
 require(tidyverse)
 require(vegan)
 require(ggordiplots)
+require(emmeans)
 source("https://raw.githubusercontent.com/EmilyB17/grazing_soil_microbes/master/R/CustomFunctions/FUNCTION_percentDifferences.R")
 
 # read cn for C:DOC and N:DON ratios
@@ -96,7 +97,8 @@ treatmentcols <- c("HDG" = "#1B9E77", "LDG" =  "#D95F02", "NG" = "#7570B3")
 sig <- posthocTrt %>% filter(p.value < 0.05) # BG, CBH, CCYCL, CDOC*2, CNratio
 
 
-### TIME
+### Line plot for each treatment over time
+# want to plot ALL enzymes 
 
 sigt <- posthocTime %>% filter(p.value < 0.05)
 
@@ -104,7 +106,7 @@ sigt <- posthocTime %>% filter(p.value < 0.05)
 dat <- enzlog %>% 
   
   # AG, BG, BX, CBH, CCYCLING, CDOCNDON, CNRAT, NAG
-  semi_join(sigt, by = "Type")  %>% 
+  #semi_join(sigt, by = "Type")  %>% 
   # get means and Se for line plot
   group_by(Type, Treatment, Time) %>% 
   summarize(mean = mean(value),
@@ -122,9 +124,12 @@ dat <- enzlog %>%
 
 
 
-# plot individual enzymes
-enzl <- paste("AG", "BG", "BX", "CBH", "NAG")
-plotdat <- dat %>% filter(str_detect(enzl, Type))
+# plot individual enzymes (so we need to remove the ratios)
+enzl <- paste("AG", "BG", "BX", "CBH", "NAG", "LAP", "PHOS", "PEROX", "PHENOX")
+plotdat <- dat %>% filter(str_detect(enzl, Type)) 
+
+
+
 
 ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
   geom_point(aes(color = Treatment)) +
@@ -133,7 +138,7 @@ ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
                     linetype = Treatment, color = Treatment),
                 width = 0.1) +
   geom_hline(yintercept = 0, color = "black") +
-  facet_wrap(~Type) +
+  facet_wrap(~Type, scales = "free") +
   scale_color_manual(values = treatmentcols) +
   labs(x = "Sampling Time", y = "% change from PRE")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -147,7 +152,7 @@ ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
 dat1 <- enzlog %>% 
   
   # AG, BG, BX, CBH, CCYCLING, CDOCNDON, CNRAT, NAG
-  semi_join(sigt, by = "Type")  %>% 
+  #semi_join(sigt, by = "Type")  %>% 
   
   mutate(Time = factor(Time, ordered = TRUE, levels = c("PRE", "diff_24H", "diff_1WK", "diff_4WK"))) %>% 
   mutate(Treatment = fct_recode(Treatment,
@@ -158,9 +163,9 @@ dat1 <- enzlog %>%
                            post1WK = "diff_1WK",
                            post4WK = "diff_4WK"))
 
-# get only BG, CBH, NAG
-enzl <- paste("Ccycl", "CdocNdon", "CNrat", sep = "|")
-plotdat <- dat1 %>% filter(!str_detect(enzl, Type))
+# get all individual enzymes
+enzl <- paste("AG", "BG", "BX", "CBH", "NAG", "LAP",  "PEROX", "PHENOX", sep = "|")
+plotdat <- dat1 %>% filter(str_detect(enzl, Type))
 
 ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill = Treatment)) +
   geom_boxplot() +
@@ -169,6 +174,42 @@ ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill 
 # save
 #ggsave("./data/plots/enzymes-24h-HDGspike.png", plot = last_plot(), dpi = "print")
 
+# get only PHOS b/c it's weird
+enzl <- paste("PHOS")
+plotdat <- dat1 %>% filter(str_detect(enzl, Type))
+
+ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill = Treatment)) +
+  geom_boxplot() +
+  scale_fill_manual(values = treatmentcols) +
+  labs(x = "Enzyme", y = "% change from 24H to PRE")
+# save
+#ggsave("./data/plots/enzymes-24h-PHOS-HDGspike.png", plot = last_plot(), dpi = "print")
+
+## group by C substrate (complex vs simple)
+
+# complex substrates
+complexC <- paste("BG", "BX", "CBH")
+plotdat <- dat1 %>% filter(str_detect(complexC, Type))
+
+ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill = Treatment)) +
+  geom_boxplot() +
+  scale_fill_manual(values = treatmentcols) +
+  labs(x = "Enzyme", y = "% change from 24H to PRE")
+# save
+#ggsave("./data/plots/enzymes-24h-complexC-HDGspike.png", plot = last_plot(), dpi = "print")
+
+## add 1WK as a comparison for LDG grazing
+complexC <- paste("BG", "BX", "CBH")
+t <- c("post24H", "post1WK")
+plotdat <- dat1 %>% filter(str_detect(complexC, Type)) %>% filter(Time %in% t)
+
+ggplot(data = plotdat, aes(x = Type, y = value, fill = Treatment)) +
+  geom_boxplot() +
+  scale_fill_manual(values = treatmentcols) +
+  facet_wrap(~Time) +
+  labs(x = "Enzyme", y = "% change from PRE")
+# save
+#ggsave("./data/plots/enzymes-24h-1WK-complexC-HDGspike.png", plot = last_plot(), dpi = "print")
 
 ## plot ratios
 rats <- paste("Ccycl", "CdocNdon", "CNrat", sep = "|")
@@ -184,3 +225,49 @@ ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
   facet_wrap(~Type) +
   scale_color_manual(values = treatmentcols) +
   labs(x = "Sampling Time", y = "% change from PRE")
+
+
+
+## ---- Regression Plots ----
+
+## plot from Sinsabaugh paper
+
+theme_set(theme_bw())
+
+# get data
+enzln <- enz %>% 
+  # make vertical
+  pivot_longer(cols = c(AG, BG, BX, CBH, Ccycl, CDOC, CdocNdon, CNrat,
+                        CP, LAP, NAG, Ncycl, NDON, NP, PER1, PEROX, 
+                        PHENOX, PHOS), names_to = "Type", values_to = "value") %>% 
+  
+  # calculate natural log (log() in R, ln in calculators) 
+  mutate(lnvalue = log(value)) %>% 
+  select(-value) %>% 
+  # make horizontal
+  pivot_wider(names_from = Type, values_from = lnvalue, names_prefix = "ln")
+
+# get the linear regression
+modNcycl <- summary(lm(lnNcycl ~ lnBG, data = enzln))
+
+
+# plot BG vs Ncycl
+
+ggplot(data = enzln, aes(x = lnNcycl, y = lnBG)) + 
+  geom_point(aes(color = Treatment, shape = GrazeTime)) +
+  geom_smooth(method = "lm") +
+  geom_text(label = "r2 = 0.14", x = 6.5, y = 6.3) +
+  ggtitle("BG vs NAP + LAP")
+
+# get the linear regression - first remove NAs
+enzna <- enzln %>% drop_na() %>% filter(!enzln$lnPHOS == "-Inf")
+modP <- summary(lm(lnPHOS ~ lnBG, data = enzna))
+
+# plot BG vs P
+ggplot(data = enzna, aes(x = lnPHOS, y = lnBG)) + 
+  geom_point() +
+  geom_point(aes(color = Treatment, shape = GrazeTime)) +
+  geom_smooth(method = "lm") +
+  geom_text(label = "r2 = 0.004", x = 2, y = 6.3) +
+  ggtitle("BG vs PHOS")
+

@@ -11,11 +11,19 @@ require(vegan)
 require(tidyverse)
 require(phyloseq)
 require(pairwiseAdonis)
+require(RColorBrewer)
 # load phyloseq objects and metadata
-require(repmis)
+if(!require(repmis)) {
+  install.packages("repmis")
+  require(repmis)
+}
 source_data("https://github.com/EmilyB17/soils-micro/blob/master/data/phyloseq16S_ITS.RData?raw=true")
 
 set.seed(123)
+
+# set brewer colors
+brewer.pal(n = 3, name = "Dark2")
+treatmentcols <- c("HDG" = "#1B9E77", "LDG" =  "#D95F02", "NG" = "#7570B3")
 
 #### ---- ITS -----
 
@@ -66,7 +74,8 @@ eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
 coords <- as.data.frame(scores(ord, display = "sites")) %>% 
   # and add grouping variable
   mutate(Treatment = sdITS18$Treatment,
-         Time = sdITS18$GrazeTime)
+         Time = sdITS18$GrazeTime,
+         Type = sdITS18$sample_type)
 
 ## 2.  get significant envfit objects to plot as arrows
 spp <- as.data.frame(scores(eft, display = "vectors")) 
@@ -109,6 +118,8 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   theme_bw() +
   # CHANGE LEGEND TITLE
   labs(color = "Treatment", shape = "Time")
+# save
+#ggsave("./data/plots/NMDS-fungi-Treatment-labels.png", plot = last_plot(), dpi = "print")
 
 ## 5. PLOT BY GRAZETIME
 # save gg_ordiplot object to get ellipse values
@@ -120,12 +131,21 @@ NMDS.mean <- plot$df_mean.ord
 # pull NMDS coordinates
 ord.data <- plot$df_ord 
 
-## create in ggplot2
+## 6. PLOT BY TIME
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sdITS18$GrazeTime, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+
 ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # ELLIPSES
   geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
   # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Treatment, color = Time), size = 1) +
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time, shape = Treatment), size = 1) +
   # GROUP NAMES AT ELLIPSE CENTER 
   annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
   # ENVFIT ARROWS
@@ -140,7 +160,36 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # THEME
   theme_bw() +
   # CHANGE LEGEND TITLE
-  labs(color = "Time", shape = "Treatment")
+  labs(color = "Sampling Time")
+# save
+#ggsave("./data/plots/NMDS-fungi-Time-labels.png", plot = last_plot(), dpi = "print")
+
+
+## SOIL TYPE
+## create in ggplot2
+ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
+  # ELLIPSES
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  # ORDINATION POINTS
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Type), size = 1) +
+  # GROUP NAMES AT ELLIPSE CENTER 
+  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  # ENVFIT ARROWS
+  geom_segment(data = sigspecies,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  # ARROW TEXT
+  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+            size = 3) +
+  # SCALE CORRECTLY
+  coord_fixed() +
+  # THEME
+  theme_bw() +
+  # CHANGE LEGEND TITLE
+  labs(color = "Soil Type")
+# save
+#ggsave("./data/plots/NMDS-fungi-soil-type.png", plot = last_plot(), dpi = "print")
+
 
 #### ---- 16S ----
 
@@ -175,12 +224,10 @@ sd16S18$GrazeTime <- factor(sd16S18$GrazeTime, ordered = TRUE,
 dis <- distance(ps16S18T, method = "bray")
 
 adonis(dis ~ Treatment * GrazeTime,
-       data = sd16S18, permutations = 999) # only GrazeTime is significant
-pairwise.adonis2(dis ~  Treatment * GrazeTime,
+       data = sd16S18, permutations = 999) # only GrazeTime
+pairwise.adonis2(dis ~  GrazeTime * Treatment,
                  data = sd16S18,
-                 p.adjust.m = "bon", perm = 1000) # GrazeTime in all comparisons,
-# Treatment difference in NO vs HI
-
+                 p.adjust.m = "bon", perm = 1000) # all GrazeTime comparisons are significant
 # ordinate
 ord <- ordinate(ps16S18T, method = "NMDS", distance = "bray", k = 2, 
                 trymax = 1000, previousBest = TRUE) 
@@ -193,7 +240,8 @@ eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
 coords <- as.data.frame(scores(ord, display = "sites")) %>% 
   # and add grouping variable
   mutate(Treatment = sd16S18$Treatment,
-         Time = sd16S18$GrazeTime)
+         Time = sd16S18$GrazeTime,
+         Type = sd16S18$sample_type)
 
 ## 2.  get significant envfit objects to plot as arrows
 spp <- as.data.frame(scores(eft, display = "vectors")) 
@@ -268,6 +316,41 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   theme_bw() +
   # CHANGE LEGEND TITLE
   labs(color = "Time", shape = "Treatment")
+
+## 6. PLOT BY SOIL TYPE
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sd16S18$sample_type, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+
+
+## create in ggplot2
+ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
+  # ELLIPSES
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  # ORDINATION POINTS
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Type), size = 1) +
+  # GROUP NAMES AT ELLIPSE CENTER 
+  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  # ENVFIT ARROWS
+  geom_segment(data = sigspecies,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  # ARROW TEXT
+  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+            size = 3) +
+  # SCALE CORRECTLY
+  coord_fixed() +
+  # THEME
+  theme_bw() +
+  # CHANGE LEGEND TITLE
+  labs(color = "Soil Type")
+# save
+#ggsave("./data/plots/NMDS-bacteria-soil-type.png", plot = last_plot(), dpi = "print")
 
 
 
