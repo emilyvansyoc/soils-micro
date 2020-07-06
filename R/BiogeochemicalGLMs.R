@@ -3,6 +3,8 @@
 require(tidyverse)
 require(emmeans)
 theme_set(theme_bw())
+# function for standard error
+se <- function(x) sqrt(var(x)/length(x))
 
 # read data
 dat <- read.table("https://github.com/EmilyB17/soils-micro/raw/master/data/2018CN.txt",
@@ -38,6 +40,20 @@ datlog <- datpd %>%
   dplyr::select(-value) %>% 
   # make horizontal
   pivot_wider(names_from = param, values_from = logvalue, names_prefix = "log_")
+
+# get summarized data for significance tables
+sum <- datpd %>% 
+  group_by(Treatment, diffTimeSeries) %>% 
+  summarize(meanDON = mean(DON_mgkgdrysoil),
+            seDON = se(DON_mgkgdrysoil),
+            meanGrav = mean(grav_mois),
+            seGrav = se(grav_mois),
+            meanNH4 = mean(NH4_mgkgdrysoil),
+            seNH4 = se(NH4_mgkgdrysoil),
+            meanDOC = mean(NPOC_mgkgdrysoil),
+            seDOC = se(NPOC_mgkgdrysoil)) %>% 
+  ungroup()
+#write.table(sum, "./data/biophys-percentchange-sum.txt", sep = "\t", row.names = FALSE)
 
 
 ## get empty dataframes to fill as we go
