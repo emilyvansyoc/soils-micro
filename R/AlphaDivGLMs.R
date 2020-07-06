@@ -16,6 +16,9 @@ dat <- read.table("https://raw.githubusercontent.com/EmilyB17/grazing_soil_micro
   # only year 2
   filter(Year == "2018")
 
+# function for standard error
+se <- function(x) sqrt(var(x)/length(x))
+
 
 ### ---- ITS: Observed ----
 
@@ -42,6 +45,29 @@ summary(aov(Observed ~ Treatment * GrazeTime,
             data = filter(its, soil_type == "B")))
 summary(aov(Observed ~ Treatment * GrazeTime, 
             data = filter(its, soil_type == "R")))
+
+## get indices for supplementary data
+sum <- its %>% 
+  group_by(Treatment, GrazeTime, soil_type) %>% 
+  summarize(meanOb = round(mean(Observed), 3),
+            seOb = round(se(Observed), 3),
+            meanShan = round(mean(Shannon), 3),
+            seShan = round(se(Shannon), 3)
+            
+            )
+
+#write.table(sum, "./data/alpha-indices-its.txt", sep = "\t", row.names = FALSE)
+
+# get just bulk & rhizo
+br <- its %>% 
+  group_by(soil_type) %>% 
+  summarize(meanOb = round(mean(Observed), 3),
+            seOb = round(se(Observed), 3),
+            meanShan = round(mean(Shannon), 3),
+            seShan = round(se(Shannon), 3)
+            
+  )
+
 
 ### ---- ITS: Shannon ----
 
@@ -81,6 +107,18 @@ summary(glm(Observed ~ Treatment * GrazeTime,
             data = filter(bac, soil_type == "B")))
 summary(glm(Observed ~ Treatment * GrazeTime,
             data = filter(bac, soil_type == "R")))
+# get mean & se for summary tables
+sum <- bac %>% 
+  group_by(Treatment, GrazeTime, soil_type) %>% 
+  summarize(meanOb = round(mean(Observed), 3),
+            seOb = round(se(Observed), 3),
+            meanShan = round(mean(Shannon), 3),
+            seShan = round(se(Shannon), 3)
+            
+  )
+
+#write.table(sum, "./data/alpha-indices-16S.txt", sep = "\t", row.names = FALSE)
+
 
 ### ---- 16S: Shannon ----
 

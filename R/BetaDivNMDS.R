@@ -56,11 +56,31 @@ sdITS18$GrazeTime <- factor(sdITS18$GrazeTime, ordered = TRUE,
 
 # statistical testing
 dis <- distance(psITS18T, method = "bray")
-adonis(dis ~ Treatment * GrazeTime,
+adonis(dis ~ Treatment * GrazeTime + sample_type,
        data = sdITS18, permutations = 999) # all are significant except Interactions
- pairwise.adonis2(dis ~  Treatment * GrazeTime,
+ pairwise.adonis2(dis ~  Treatment * GrazeTime + sample_type,
                              data = sdITS18,
                              p.adjust.m = "bon", perm = 1000)
+ 
+ ## BULK SOIL ONLY
+disb <- distance(subset_samples(psITS18T, sample_type == "bulk"), method = "bray")
+adonis(disb ~ Treatment * GrazeTime,
+       data = filter(sdITS18, sample_type == "bulk"), permutations = 999) #Treatment is significant
+# because treatment is significant, look at pairwise treatment comparisons
+pairwise.adonis2(disb ~  Treatment * GrazeTime,
+                 filter(sdITS18, sample_type == "bulk"),
+                 p.adjust.m = "bon", perm = 1000)
+
+## RHIZOSPHERIC SOIL ONLY
+disr <- distance(subset_samples(psITS18T, sample_type == "rhizospheric"), method = "bray")
+adonis(disr ~ Treatment * GrazeTime,
+       data = filter(sdITS18, sample_type == "rhizospheric"), permutations = 999)  # Treatment is also significant
+# because treatment is significant, look at pairwise treatment comparisons
+pairwise.adonis2(disr ~  Treatment * GrazeTime,
+                 filter(sdITS18, sample_type == "rhizospheric"),
+                 p.adjust.m = "bon", perm = 1000) # no differences 
+
+## since bulk and rhizospheric had the same differences, plot NMDS together
 
 # ordinate
 ord <- ordinate(psITS18T, method = "NMDS", distance = "bray", k = 2, 
@@ -228,6 +248,29 @@ adonis(dis ~ Treatment * GrazeTime,
 pairwise.adonis2(dis ~  GrazeTime * Treatment,
                  data = sd16S18,
                  p.adjust.m = "bon", perm = 1000) # all GrazeTime comparisons are significant
+pairwise.adonis2(dis ~  Treatment * GrazeTime,
+                 data = sd16S18,
+                 p.adjust.m = "bon", perm = 1000)  # NG vs HDG difference; likely in the 1WK-4WK time above 
+
+## BULK SOIL ONLY
+disb <- distance(subset_samples(ps16S18T, sample_type == "bulk"), method = "bray")
+adonis(disb ~ Treatment * GrazeTime,
+       data = filter(sd16S18, sample_type == "bulk"), permutations = 999) #GrazeTime is significant
+# because GrazeTime is significant, look at pairwise treatment comparisons
+pairwise.adonis2(disb ~  GrazeTime * Treatment,
+                 filter(sd16S18, sample_type == "bulk"),
+                 p.adjust.m = "bon", perm = 1000) # PRE vs 24H, PRE vs 1WK
+
+## RHIZOSPHERIC SOIL ONLY
+disr <- distance(subset_samples(ps16S18T, sample_type == "rhizospheric"), method = "bray")
+adonis(disr ~ Treatment * GrazeTime,
+       data = filter(sd16S18, sample_type == "rhizospheric"), permutations = 999)  # also GrazeTime
+
+# because GrazeTime is significant, look at pairwise treatment comparisons
+pairwise.adonis2(disr ~  GrazeTime * Treatment,
+                 filter(sd16S18, sample_type == "rhizospheric"),
+                 p.adjust.m = "bon", perm = 1000) # PRE vs 24H, 24H vs 4WK, PRE vs 1WK, 24H vs 1WK
+
 # ordinate
 ord <- ordinate(ps16S18T, method = "NMDS", distance = "bray", k = 2, 
                 trymax = 1000, previousBest = TRUE) 
