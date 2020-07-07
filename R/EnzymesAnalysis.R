@@ -255,8 +255,7 @@ modNcycl <- summary(lm(lnNcycl ~ lnBG, data = enzln))
 
 ggplot(data = enzln, aes(x = lnNcycl, y = lnBG)) + 
   geom_point(aes(color = Treatment, shape = GrazeTime)) +
-  geom_smooth(method = "lm") +
-  geom_text(label = "r2 = 0.14", x = 6.5, y = 6.3) +
+  # plot 1:1 line (perfect diagonal)
   ggtitle("BG vs NAP + LAP")
 
 # get the linear regression - first remove NAs
