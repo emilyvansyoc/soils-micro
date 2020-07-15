@@ -71,7 +71,7 @@ head(sigtab)
 # sort by log2fold change
 sigtab <- sigtab[order(sigtab$log2FoldChange), ]
 # write table of results
-write.table(sigtab, "./data/deseq2-its-bulkvsrhizo.txt", sep = "\t", row.names= FALSE)
+#write.table(sigtab, "./data/deseq2-its-bulkvsrhizo.txt", sep = "\t", row.names= FALSE)
 
 ## ---- Fungal: treatments ----
 
@@ -106,7 +106,7 @@ head(sigtabHI)
 # sort by log2fold change
 sigtabHI <- sigtabHI[order(sigtabHI$log2FoldChange),]
 # write table of results
-write.table(sigtabHI, "./data/deseq2-its-HIvsNO.txt", sep = "\t", row.names= FALSE)
+#write.table(sigtabHI, "./data/deseq2-its-HIvsNO.txt", sep = "\t", row.names= FALSE)
 
 
 sigtabLO = resLO[which(resLO$padj < alpha), ]
@@ -115,7 +115,10 @@ head(sigtabLO)
 # sort by log2fold change
 sigtabLO <- sigtabLO[order(sigtabLO$log2FoldChange), ]
 # write table of results
-write.table(sigtabLO, "./data/deseq2-its-LOvsNO.txt", sep = "\t", row.names= FALSE)
+#write.table(sigtabLO, "./data/deseq2-its-LOvsNO.txt", sep = "\t", row.names= FALSE)
+
+# which genuses are found in both HDG and LDG compared to NG?
+match <- sigtabLO$Genus[sigtabLO$Genus %in% sigtabHI$Genus]
 
 ## ---- Bacteria: pre-process ----
 

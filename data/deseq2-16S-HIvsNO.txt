@@ -1,0 +1,2 @@
+"baseMean"	"log2FoldChange"	"lfcSE"	"stat"	"pvalue"	"padj"	"Kingdom"	"Phylum"	"Class"	"Order"	"Family"	"Genus"
+52.8258304158628	-1.08056770324918	0.250270487646882	-4.3175993838067	1.57735391624861e-05	0.0091801997925669	"Bacteria"	"Proteobacteria"	"Deltaproteobacteria"	"Myxococcales"	"Nannocystaceae"	"Nannocystis"

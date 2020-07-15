@@ -1,0 +1,13 @@
+"baseMean"	"log2FoldChange"	"lfcSE"	"stat"	"pvalue"	"padj"	"Kingdom"	"Phylum"	"Class"	"Order"	"Family"	"Genus"	"Species"
+125.176071542197	-27.4091841507639	2.89775379858733	-9.45876912114688	3.11589336242572e-21	3.05357549517721e-19	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Capnodiales"	"f__Capnodiaceae"	"g__Antennariella"	NA
+5.90503869159537	-22.9934325743023	3.56752162368307	-6.44521183043712	1.15439068294556e-10	7.54201912857768e-09	"k__Fungi"	"p__Basidiomycota"	"c__Agaricomycetes"	"o__Agaricales"	"f__Psathyrellaceae"	"g__Psathyrella"	NA
+10.9588305651633	-17.5718196203854	3.19580195358473	-5.49840693371976	3.83237712851699e-08	1.87786479297333e-06	"k__Fungi"	"p__Basidiomycota"	"c__Agaricomycetes"	"o__Agaricales"	"f__Crepidotaceae"	"g__Simocybe"	NA
+49.9446356312682	-5.12583900998539	1.3874584661909	-3.69440897503602	0.000220398826800838	0.00539977125662054	"k__Fungi"	"p__Ascomycota"	"c__Eurotiomycetes"	"o__Chaetothyriales"	"f__Trichomeriaceae"	"g__Knufia"	NA
+8.64342385801528	-4.7910862662456	1.23961840022429	-3.86496865920893	0.00011110346496875	0.00311089701912501	"k__Fungi"	"p__Ascomycota"	"c__Sordariomycetes"	"o__Glomerellales"	"f__Plectosphaerellaceae"	"g__Gibellulopsis"	NA
+74.1284606713378	-3.69545000562096	1.18337141984809	-3.12281498744945	0.00179130312488946	0.0319177647707577	"k__Fungi"	"p__Ascomycota"	"c__Eurotiomycetes"	"o__Chaetothyriales"	"f__Cyphellophoraceae"	"g__Cyphellophora"	NA
+104.416915020922	-1.831009003589	0.534890810265761	-3.42314537555668	0.000619009623322561	0.0121325886171222	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Pleosporales"	"f__Phaeosphaeriaceae"	"g__Sclerostagonospora"	NA
+44.6906069023007	-1.75849885241901	0.500764649186218	-3.51162737880301	0.000445371972982993	0.00969921185607408	"k__Fungi"	"p__Basidiomycota"	"c__Tremellomycetes"	"o__Filobasidiales"	"f__Filobasidiaceae"	"g__Naganishia"	NA
+19.5453738271161	1.75621744615793	0.588890776115986	2.98224648336491	0.0028614152355658	0.0467364488475748	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Dothideales"	"f__Aureobasidiaceae"	"g__Aureobasidium"	NA
+262.686257526661	3.70610266602905	0.77365690252906	4.79036980593584	1.6647421211651e-06	5.43815759580599e-05	"k__Fungi"	"p__Ascomycota"	"c__Pezizomycetes"	"o__Pezizales"	"f__Pyronemataceae"	"g__Kotlabaea"	NA
+620.803531246462	5.41979530668983	1.03839713302181	5.21938585377044	1.79517413674766e-07	7.03708261605083e-06	"k__Fungi"	"p__Basidiomycota"	"c__Agaricomycetes"	"o__Agaricales"	"f__Marasmiaceae"	"g__Marasmius"	NA
+100.341834902347	23.22817933644	2.28166584037829	10.1803598604907	2.42662314292409e-24	4.75618136013122e-22	"k__Fungi"	"p__Ascomycota"	"c__Sordariomycetes"	"o__Hypocreales"	"f__Hypocreaceae"	"g__Trichoderma"	NA

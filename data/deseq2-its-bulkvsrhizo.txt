@@ -1,0 +1,14 @@
+"baseMean"	"log2FoldChange"	"lfcSE"	"stat"	"pvalue"	"padj"	"Kingdom"	"Phylum"	"Class"	"Order"	"Family"	"Genus"	"Species"
+95.9132513393021	-1.63217121180199	0.521328011314451	-3.13079515464115	0.00174333716445282	0.0223728269438112	"k__Fungi"	"p__Ascomycota"	"c__Pezizomycetes"	"o__Pezizales"	"f__Pyronemataceae"	"g__Kotlabaea"	NA
+1811.68237169363	-1.02758786835065	0.276680581629051	-3.71398622303156	0.000204019905645377	0.00431225758296765	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Pleosporales"	"f__Sporormiaceae"	"g__Preussia"	NA
+783.475033332588	-0.9718033024092	0.279642907826968	-3.47515805053248	0.000510552446950975	0.0087361196478278	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Pleosporales"	"f__Pleosporaceae"	"g__Alternaria"	NA
+262.080754577697	-0.710548089581174	0.218356557675299	-3.25407259184665	0.0011376320547503	0.0159268487665041	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Capnodiales"	"f__Mycosphaerellaceae"	"g__Mycosphaerella"	NA
+1371.53846302488	1.21913608809991	0.258285501849268	4.72011041801093	2.35716653986459e-06	0.000121001215713049	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Pleosporales"	"f__Lentitheciaceae"	"g__Darksidea"	NA
+238.442302929077	1.35314072795822	0.35746175686646	3.78541396937107	0.000153452915520208	0.00393862483168535	"k__Fungi"	"p__Glomeromycota"	"c__Glomeromycetes"	"o__Glomerales"	"f__Glomeraceae"	"g__Dominikia"	NA
+62.6777320918317	1.55945095466848	0.458325911754287	3.40249354154891	0.000667739334375324	0.01028318574938	"k__Fungi"	"p__Glomeromycota"	"c__Glomeromycetes"	"o__Glomerales"	"f__Claroideoglomeraceae"	"g__Claroideoglomus"	NA
+140.647658163727	1.61356217045304	0.375784292301314	4.29385209416695	1.75599479467166e-05	0.000611073033006767	"k__Fungi"	"p__Ascomycota"	"c__Eurotiomycetes"	"o__Chaetothyriales"	"f__Herpotrichiellaceae"	"g__Heteroconium"	NA
+103.698947147371	1.76522651376093	0.478345759791408	3.69027314997145	0.000224013380933384	0.00431225758296765	"k__Fungi"	"p__Ascomycota"	"c__Dothideomycetes"	"o__Pleosporales"	"f__Lophiotremataceae"	"g__Lophiotrema"	NA
+459.552701987098	2.08907168884272	0.352252874457426	5.93060224720811	3.01825560364563e-09	4.64811362961427e-07	"k__Fungi"	"p__Ascomycota"	"c__Eurotiomycetes"	"o__Chaetothyriales"	"f__Herpotrichiellaceae"	"g__Exophiala"	NA
+184.571564361846	2.27449061805491	0.533081638489975	4.2666834755324	1.98400335391807e-05	0.000611073033006767	"k__Fungi"	"p__Basidiomycota"	"c__Agaricomycetes"	"o__Cantharellales"	"f__Tulasnellaceae"	"g__Epulorhiza"	NA
+105.722138645521	2.74199849342361	0.494559518144454	5.54432458142017	2.95090999155419e-08	2.27220069349672e-06	"k__Fungi"	"p__Ascomycota"	"c__Leotiomycetes"	"o__Helotiales"	"f__Hyaloscyphaceae"	"g__Cistella"	NA
+36.410693758798	3.2507533788303	1.1000716445463	2.95503787862016	0.00312630664761095	0.0370347095178528	"k__Fungi"	"p__Ascomycota"	"c__Eurotiomycetes"	"o__Chaetothyriales"	"f__Trichomeriaceae"	"g__Knufia"	NA
