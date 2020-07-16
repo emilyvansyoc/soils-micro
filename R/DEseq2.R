@@ -73,6 +73,35 @@ sigtab <- sigtab[order(sigtab$log2FoldChange), ]
 # write table of results
 #write.table(sigtab, "./data/deseq2-its-bulkvsrhizo.txt", sep = "\t", row.names= FALSE)
 
+## ---- Fungal: bulk vs rhizo at Phyla level ----
+
+# because the NMDS incorporates Phyla, can we confirm our results with DESeq?
+pspy <- tax_glom(ps, taxrank = "Phylum", NArm = TRUE)
+
+# our "null" comparison has to be the first factor for comparisons
+sample_data(pspy)$sample_type <- relevel(sample_data(pspy)$sample_type, ref = "bulk")
+str(sample_data(pspy)$sample_type) # bulk is level 1 so will be the "Null" comparison
+
+# convert phyloseq to DESeq2 object
+desob <- phyloseq_to_deseq2(physeq = pspy,
+                            design = ~ sample_type)
+
+# perform DeSeq testing
+de <- DESeq(desob, test = "Wald", fitType = "parametric")
+
+# get results
+res = results(de, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(psgen)[rownames(sigtab), ], "matrix"))
+head(sigtab) # only Glomeromycota
+
+# sort by log2fold change
+sigtab <- sigtab[order(sigtab$log2FoldChange), ]
+# write table of results
+#write.table(sigtab, "./data/deseq2-its-bulkvsrhizo.txt", sep = "\t", row.names= FALSE)
+
+
 ## ---- Fungal: treatments ----
 
 # first, remove PRE time so we are only comparing samples with grazing impact
@@ -131,7 +160,7 @@ taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps16S18)))
 # first agglomerate taxa at the genus level
 psgen <- tax_glom(ps, taxrank = "Genus", NArm = TRUE)
 
-### ---- Fungal: bulk vs rhizo ----
+### ---- Bacteria: bulk vs rhizo ----
 
 # our "null" comparison has to be the first factor for comparisons
 sample_data(psgen)$sample_type <- relevel(sample_data(psgen)$sample_type, ref = "bulk")
@@ -155,6 +184,33 @@ head(sigtab)
 sigtab <- sigtab[order(sigtab$log2FoldChange), ]
 # write table of results
 write.table(sigtab, "./data/deseq2-16S-bulkvsrhizo.txt", sep = "\t", row.names= FALSE)
+
+## ---- Bacteria: bulk vs rhizo at Phyla level ----
+
+psb <- tax_glom(ps, taxrank = "Phylum", NArm = TRUE)
+
+# our "null" comparison has to be the first factor for comparisons
+sample_data(psb)$sample_type <- relevel(sample_data(psb)$sample_type, ref = "bulk")
+str(sample_data(psb)$sample_type) # bulk is level 1 so will be the "Null" comparison
+
+# convert phyloseq to DESeq2 object
+desob <- phyloseq_to_deseq2(physeq = psb,
+                            design = ~ sample_type)
+
+# perform DeSeq testing
+de <- DESeq(desob, test = "Wald", fitType = "parametric")
+
+# get results
+res = results(de, cooksCutoff = FALSE)
+alpha = 0.05
+sigtab = res[which(res$padj < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(psb)[rownames(sigtab), ], "matrix"))
+head(sigtab) # only Cyanobacteria
+
+# sort by log2fold change
+sigtab <- sigtab[order(sigtab$log2FoldChange), ]
+# write table of results
+#write.table(sigtab, "./data/deseq2-16S-bulkvsrhizo.txt", sep = "\t", row.names= FALSE)
 
 ## ---- Bacteria: treatments ----
 
