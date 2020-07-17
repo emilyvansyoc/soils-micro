@@ -71,6 +71,6 @@ ggplot(data = datv,
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # save
-#ggsave("./data/plots/all-time-lineplot.png", plot = last_plot(), dpi = "print")
+#ggsave("./data/plots/all-time-lineplot.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
 
 
