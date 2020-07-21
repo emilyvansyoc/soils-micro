@@ -102,3 +102,6 @@ ggplot(data = ldg, aes(x = Treatment, y = recov, fill = Treatment)) +
   labs(x = "Treatment", y = "Relative vegetation recovery from 1WK to 4WK")
 # save
 #ggsave("./data/plots/veg-LDGandNG-recov.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+
+
+  
