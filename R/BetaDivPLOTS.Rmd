@@ -179,9 +179,9 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # GROUP NAMES AT ELLIPSE CENTER 
   #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
   # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  #geom_segment(data = sigspecies,
+   #            aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+    #           arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
   # ARROW TEXT
  # geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
   #          size = 3) +

@@ -104,4 +104,18 @@ ggplot(data = ldg, aes(x = Treatment, y = recov, fill = Treatment)) +
 #ggsave("./data/plots/veg-LDGandNG-recov.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
 
 
-  
+## ---- forage utilization summary ----
+
+uthi <- dat %>% 
+  filter(Treatment == "HI") %>% 
+  pivot_wider(names_from = GrazeTime, values_from = reading_rpm, names_prefix = "T") %>% 
+  mutate(ut = ((T24H - TPRE) / TPRE) * 100) %>% 
+  summarize(avg = mean(ut),
+            se = se(ut))
+
+utlo <- dat %>% 
+  filter(Treatment == "LO") %>% 
+  pivot_wider(names_from = GrazeTime, values_from = reading_rpm, names_prefix = "T") %>% 
+  mutate(ut = ((T1WK - TPRE) / TPRE) * 100) %>% 
+  summarize(avg = mean(ut),
+            se = se(ut))
