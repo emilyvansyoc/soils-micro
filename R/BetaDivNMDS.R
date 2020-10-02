@@ -61,7 +61,7 @@ sdITS18$GrazeTime <- factor(sdITS18$GrazeTime, ordered = TRUE,
 dis <- distance(psITS18T, method = "bray")
 adonis(dis ~ Treatment * GrazeTime + sample_type,
        data = sdITS18, permutations = 999) # all are significant except Interactions
-pairwise.adonis2(dis ~  Treatment * GrazeTime + sample_type,
+pairwise.adonis2(dis ~  GrazeTime * Treatment+ sample_type,
                              data = sdITS18,
                              p.adjust.m = "bon", perm = 1000)
  
