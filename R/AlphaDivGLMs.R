@@ -1,6 +1,8 @@
 ## Alpha Diversity
 
 require(tidyverse)
+source("./R/RColorBrewer.R")
+theme_set(theme_bw())
 
 ## note: block 4 has already been removed
 # this data is rarefied
@@ -37,8 +39,12 @@ mod <- aov(Observed ~ Treatment * GrazeTime, data = its)
 t <- t.test(Observed ~ soil_type, data = its) ## BULK IS HIGHER
 
 # plot
-ggplot(data = its, aes(x = soil_type, y = Observed)) +
-  geom_boxplot()
+ggplot(data = its, aes(x = soil_type, y = Observed, fill = soil_type)) +
+  geom_boxplot() +
+  labs(fill = "Soil Type", x = "Soil Type", y = "Observed ASVs")
+# save
+#ggsave("./data/plots/obeservedotus-fungi.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+
 
 ### subset bulk & rhizospheric
 summary(aov(Observed ~ Treatment * GrazeTime, 
@@ -86,6 +92,15 @@ summary(glm(Shannon ~ Treatment * GrazeTime,
             data = filter(its, soil_type == "B")))
 summary(glm(Shannon ~ Treatment * GrazeTime,
             data = filter(its, soil_type == "R")))
+
+# plot
+ggplot(data = its, aes(x = soil_type, y = Shannon, fill = soil_type)) +
+  geom_boxplot() +
+  labs(fill = "Soil Type", x = "Soil Type", y = "Shannon H'")
+# save
+#ggsave("./data/plots/shannon-fungi.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+
+
 
 ### --- 16S: Observed ----
 
