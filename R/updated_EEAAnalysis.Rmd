@@ -1,0 +1,559 @@
+---
+title: "2019EEA_Analysis"
+output: html_notebook
+---
+
+
+```{r}
+#source("https://raw.githubusercontent.com/EmilyB17/grazing_soil_microbes/master/R/2019sourcingUnivariateData_prepped.R") 
+source("https://raw.githubusercontent.com/EmilyB17/grazing_soil_microbes/master/R/CustomFunctions/FUNCTION_percentDifferences.R")
+load("C:/Users/emily/OneDrive - University of Wyoming/Thesis Work/grazing_soil_microbes/data/allBetaDiv_PSobjects_UNITE.RData")
+require(tidyverse)
+require(emmeans)
+require(vegan)
+require(ggordiplots)
+
+# add CDOC, NDON and C:DOC/N:DON
+bulk <- sd16S18[sd16S18$sample_type %in% "bulk" &
+                  sd16S18$Block %in% 1:3,] %>%  dplyr::select(-sample_type) %>% 
+  mutate(Ccycl = AG + BG + BX + CBH,
+         Ncycl = NAG + LAP,
+         CNrat = (AG + BG + BX + CBH) / (NAG + LAP),
+         CP = (AG + BG + BX + CBH + 1) / (PHOS + 1),
+         NP = (NAG + LAP + 1) / (PHOS + 1),
+         CDOC = Ccycl / NPOC_mgkgdrysoil,
+         NDON = Ncycl / DON_mgkgdrysoil,
+         CdocNdon = CDOC / NDON)
+  
+# calculate percent differences
+all18.pd <-     percentDifferences(df = bulk,
+                               ids = c("Plot", "Treatment", "Block", "GrazeTime"),
+                               timeKey = "GrazeTime",
+                               timeLevels = c("PRE", "24H", "1WK", "4WK"),
+                               level1 = "PRE") %>% 
+  # make vertical again
+  gather(key = "Param", value = "value", AG, BG, BX, CBH, LAP, NAG, PER1, PEROX, PHENOX, PHOS, Ccycl, Ncycl, CNrat, CP, NP, CDOC, NDON, CdocNdon,
+         biomass_kg_plot, grav_mois, mineralN_mgkgdrysoil,NH4_mgkgdrysoil,
+         NO3_mgkgdrysoil, NPOC_mgkgdrysoil, DON_mgkgdrysoil) %>% 
+  # order Time
+  mutate(diffTimeSeries = factor(diffTimeSeries, ordered = TRUE,
+                                 levels = c("diff_24H", "diff_1WK", "diff_4WK")),
+         Param = as.factor(Param),
+         # create logged percent difference for GLMs
+         log_val = log1p(value + 101))
+
+## 2017 data
+bulk17 <- sdITS17[sdITS17$sample_type %in% "bulk" &
+                  sdITS17$Block %in% 1:3,] %>%  dplyr::select(-sample_type) %>% 
+  mutate(Ccycl = AG + BG + BX + CBH,
+         Ncycl = NAG + LAP,
+         CNrat = (AG + BG + BX + CBH) / (NAG + LAP),
+         CP = (AG + BG + BX + CBH + 1) / (PHOS + 1),
+         NP = (NAG + LAP + 1) / (PHOS + 1),
+         CDOC = Ccycl / NPOC_mgkgdrysoil,
+         NDON = Ncycl / DON_mgkgdrysoil,
+         CdocNdon = CDOC / NDON)
+all17.pd <-     percentDifferences(df = bulk17,
+                               ids = c("Plot", "Treatment", "Block", "GrazeTime"),
+                               timeKey = "GrazeTime",
+                               timeLevels = c("PRE", "24H", "1WK", "4WK"),
+                               level1 = "PRE") %>% 
+  # make vertical again
+  gather(key = "Param", value = "value", AG, BG, BX, CBH, LAP, NAG, PER1, PEROX, PHENOX, PHOS, Ccycl, Ncycl, CNrat, CP, NP, CDOC, NDON, CdocNdon,
+         biomass_kg_plot, Gravmois, minN_mgkgdrysoil,NH4_mgkgdrysoil,
+         NO3_mgkgdrysoil, NPOC_mgkgdrysoil, DON_mgkgdrysoil, MBC_mgkgdrysoil,
+         MBN_mgkgdrysoil) %>% 
+  # order Time
+  mutate(diffTimeSeries = factor(diffTimeSeries, ordered = TRUE,
+                                 levels = c("diff_24H", "diff_1WK", "diff_4WK")),
+         Param = as.factor(Param),
+         # create logged percent difference for GLMs
+         log_val = log1p(value + 101))
+
+
+
+```
+
+#### 2018 NMDS
+```{r}
+## NMDS for 2018 enzyme data (relative abundance)
+enz18r <- sd16S18 %>%  dplyr::select(c(AG, BG, BX, CBH, LAP, NAG, PER1, 
+                                     PEROX, PHENOX, PHOS, Block, sample_type))
+enz18r <- enz18r[enz18r$Block %in% 1:3 &
+                   enz18r$sample_type %in% "bulk",] %>% 
+  dplyr::select(-c(Block, sample_type))
+
+enz18NMDS <- decostand(enz18r, method = "max", MARGIN = 2, na.rm = TRUE)
+
+## conglomerate OTUs by Phyla and add to metadata for NMDS
+# we want ITS AND 16S
+# agglomerate ITS data by Phyla
+tgITS18 <- tax_glom(psITS18, taxrank = rank_names(psITS18)[2], NArm = TRUE)
+# name the phyla
+taxa_names(tgITS18) <- tgITS18@tax_table@.Data[,2]
+# make a dataframe
+df <- as.data.frame(otu_table(tgITS18)) 
+df1 <- cbind(df, psITS18@sam_data$Block, psITS18@sam_data$sample_type)
+df1 <- df1[df1$`psITS18@sam_data$Block` %in% 1:3 &
+             df1$`psITS18@sam_data$sample_type` %in% "bulk",] %>% 
+  dplyr::select(-c(`psITS18@sam_data$Block`, `psITS18@sam_data$sample_type` ))
+# create relative abundance of Phyla for each sample
+dc <- decostand(df1, method = "total", MARGIN = 2)
+colnames(dc) <- gsub("p__", "fungi_", colnames(dc))
+## add 16S phyla
+tg16S18 <- tax_glom(ps16S18, taxrank = rank_names(ps16S18)[2], NArm = TRUE)
+taxa_names(tg16S18) <- paste("bac", tg16S18@tax_table@.Data[,2], sep = "_")
+df2 <- as.data.frame(otu_table(tg16S18))
+df3 <- cbind(df2, ps16S18@sam_data$Block, ps16S18@sam_data$sample_type)
+df3 <- df3[df3$`ps16S18@sam_data$Block` %in% 1:3 &
+             df3$`ps16S18@sam_data$sample_type` %in% "bulk",] %>% 
+  dplyr::select(-c(`ps16S18@sam_data$Block`,`ps16S18@sam_data$sample_type` ))
+dc1 <- decostand(df3, method = "total", MARGIN = 2)
+
+# ITS has 71 samples while 16S has 72 - make the missing sample of ITS into "NAs"
+which(!row.names(dc1) %in% row.names(dc))
+row.names(dc1[35,]) # PRE_8_B
+dc["PRE_8_B",] <- 0
+dc <- dc[order(row.names(dc)),]
+# combine with sample data
+sd16S181 <- cbind(sd16S18[sd16S18$Block %in% 1:3 &
+                            sd16S18$sample_type %in% "bulk",], dc, dc1)
+# select only the variables that we wat
+sdNMDS18 <- sd16S181 %>% dplyr::select(-c(sample_type, AG, BG, BX, CBH, LAP, NAG, PER1, 
+                                     PEROX, PHENOX, PHOS))
+
+# statistical testing
+dis <- vegdist(enz18NMDS)
+adonis(dis ~ Treatment * GrazeTime,
+       data = sdNMDS18, permutations = 999) # GrazeTime is significant
+
+
+# ordinate
+ord <- metaMDS(enz18NMDS,  distance = "bray", k = 2, 
+                trymax = 1000, previousBest = TRUE) 
+stressplot(ord, dis) # OK with 2 dimensions
+eft <- envfit(ord, env = sdNMDS18, perm = 1000, na.rm = TRUE)
+eft # GrazeTime & Block are significant, several vectors
+```
+
+```{r}
+### PLOT NMDS
+
+# pull NMDS coordinates
+sdNMDS18$GrazeTime <- factor(sdNMDS18$GrazeTime, ordered = TRUE,
+                             levels = c("PRE", "24H", "1WK", "4WK"))
+sdNMDS18$NMDS1 <- ord$points[,1]
+sdNMDS18$NMDS2 <- ord$points[,2]
+# pull significant envfit objects to plots
+species.scores <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+species.scores$species <- row.names(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sdNMDS18$GrazeTime, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+## create in ggplot2
+ggplot(data = sdNMDS18, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, color = GrazeTime), size = 1) +
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  #geom_text(data = species.scores, 
+   #        aes(x = NMDS1, y = NMDS2, label=species),
+    #      size = 3) +
+  ggtitle("EEA 2018 NMDS") +
+  theme_bw()
+```
+
+#### 2017 NMDS
+```{r}
+## NMDS for 2017 enzyme data (relative abundance)
+enz17r <- sd16S17 %>%  dplyr::select(c(AG, BG, BX, CBH, LAP, NAG, PER1, 
+                                       PEROX, PHENOX, PHOS, Block, sample_type))
+enz17r <- enz17r[enz17r$Block %in% 1:3 &
+                   enz17r$sample_type %in% "bulk",] %>% 
+  dplyr::select(-c(Block, sample_type))
+
+enz17NMDS <- decostand(enz17r, method = "max", MARGIN = 2, na.rm = TRUE)
+
+## conglomerate OTUs by Phyla and add to metadata for NMDS
+# we want ITS AND 16S
+# agglomerate ITS data by Phyla
+tgITS17 <- tax_glom(psITS17, taxrank = rank_names(psITS17)[2], NArm = TRUE)
+# name the phyla
+taxa_names(tgITS17) <- tgITS17@tax_table@.Data[,2]
+# make a dataframe
+df <- as.data.frame(otu_table(tgITS17)) 
+df1 <- cbind(df, psITS17@sam_data$Block, psITS17@sam_data$sample_type)
+df1 <- df1[df1$`psITS17@sam_data$Block` %in% 1:3 &
+             df1$`psITS17@sam_data$sample_type` %in% "bulk",] %>% 
+  dplyr::select(-c(`psITS17@sam_data$Block`, `psITS17@sam_data$sample_type` ))
+# create relative abundance of Phyla for each sample
+dc <- decostand(df1, method = "total", MARGIN = 2)
+colnames(dc) <- gsub("p__", "fungi_", colnames(dc))
+## add 16S phyla
+tg16S17 <- tax_glom(ps16S17, taxrank = rank_names(ps16S17)[2], NArm = TRUE)
+taxa_names(tg16S17) <- paste("bac", tg16S17@tax_table@.Data[,2], sep = "_")
+df2 <- as.data.frame(otu_table(tg16S17))
+df3 <- cbind(df2, ps16S17@sam_data$Block, ps16S17@sam_data$sample_type)
+df3 <- df3[df3$`ps16S17@sam_data$Block` %in% 1:3 &
+             df3$`ps16S17@sam_data$sample_type` %in% "bulk",] %>% 
+  dplyr::select(-c(`ps16S17@sam_data$Block`,`ps16S17@sam_data$sample_type` ))
+dc1 <- decostand(df3, method = "total", MARGIN = 2)
+
+
+# combine with sample data
+sd16S171 <- cbind(sd16S17[sd16S17$Block %in% 1:3 &
+                            sd16S17$sample_type %in% "bulk",], dc, dc1)
+# select only the variables that we wat
+sdNMDS17 <- sd16S171 %>% dplyr::select(-c(sample_type, AG, BG, BX, CBH, LAP, NAG, PER1, 
+                                          PEROX, PHENOX, PHOS)) %>% 
+  mutate(Block = factor(Block))
+
+# statistical testing
+dis <- vegdist(enz17NMDS)
+adonis(dis ~ Treatment * GrazeTime,
+       data = sdNMDS17, permutations = 999) # GrazeTime is significant
+
+
+# ordinate
+ord <- metaMDS(enz17NMDS,  distance = "bray", k = 2, 
+               trymax = 1000, previousBest = TRUE) 
+stressplot(ord, dis) # OK with 2 dimensions
+eft <- envfit(ord, env = sdNMDS17, perm = 1000, na.rm = TRUE)
+eft # GrazeTime is significant, several vectors
+
+```
+
+```{r}
+
+### PLOT NMDS
+
+# pull NMDS coordinates
+sdNMDS17$GrazeTime <- factor(sdNMDS17$GrazeTime, ordered = TRUE,
+                             levels = c("PRE", "24H", "1WK", "4WK"))
+sdNMDS17$NMDS1 <- ord$points[,1]
+sdNMDS17$NMDS2 <- ord$points[,2]
+# pull significant envfit objects to plots
+species.scores <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+species.scores$species <- row.names(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sdNMDS17$GrazeTime, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+## create in ggplot2
+ggplot(data = sdNMDS17, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, color = GrazeTime), size = 1) +
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  #geom_text(data = species.scores, 
+   #         aes(x = NMDS1, y = NMDS2, label=species),
+    #        size = 3) +
+  ggtitle("EEA 2017 NMDS") +
+  theme_classic()
+```
+
+
+#### 2018 GLMs
+
+```{r}
+
+
+### GLMs on log-transformed percent change after PRE 
+
+par <- unique(all18.pd$Param)
+modelFit <- data.frame()
+outDF1 <- data.frame()
+outDF2 <- data.frame()
+for(i in 1:length(par)) {
+  mod <- glm(log_val ~ diffTimeSeries * Treatment,
+             data = filter(all18.pd, Param == par[i]),
+             family = gaussian(link = "identity"))
+  mf <- data.frame(Param = as.character(par[i]),
+                   Year = "2018",
+                   deviance = mod$deviance,
+                   null.deviance = mod$null.deviance,
+                   diff = mod$null.deviance - mod$deviance,
+                   df.null = mod$df.null,
+                   df.dev = mod$df.residual)
+  modelFit <- rbind(mf, modelFit)
+  e <- as.data.frame(
+    emmeans(mod, pairwise ~ Treatment | diffTimeSeries, type = "response"))
+  df <- e %>% dplyr::select(c(contrasts.contrast, contrasts.diffTimeSeries,
+                              contrasts.SE, contrasts.z.ratio, 
+                              contrasts.p.value))
+  df$Param<- factor(as.character(par[i]))
+  outDF1 <- rbind(df, outDF1)
+  e2 <- as.data.frame(
+    emmeans(mod, pairwise ~ diffTimeSeries | Treatment, type = "response"))
+  df1 <- e2 %>% dplyr::select(c(contrasts.contrast, contrasts.Treatment,
+                                contrasts.SE, contrasts.z.ratio, 
+                                contrasts.p.value))
+  df1$Param <- factor(as.character(par[i]))
+  outDF2 <- rbind(df1, outDF2)
+  
+}
+
+colnames(outDF1) <- c("contrast", "contTS.Trt", "SE", "z.ratio", 
+                      "p.value", "Param")
+outDF1$sign <- ifelse(outDF1$p.value <= 0.05,
+                      "significant",
+                      "not_significant")
+colnames(outDF2) <- c("contrast", "contTS.Trt", "SE", "z.ratio",
+                      "p.value", "Param")
+outDF2$sign <- ifelse(outDF2$p.value <= 0.05,
+                      "significant",
+                      "not_significant")
+sig.TS1 <- outDF1[which(outDF1$sign %in% "significant"),]
+sig.Trt1 <- outDF2[which(outDF2$sign %in% "significant"),]
+outDF1$Year <- "2018"
+outDF2$Year <- "2018"
+
+
+```
+#### 2017 GLMs
+
+```{r}
+
+
+
+
+### GLMs on log-transformed percent change after PRE EEA
+
+par <- unique(all17.pd$Param)
+modelFit2 <- data.frame()
+outDF3 <- data.frame()
+outDF4 <- data.frame()
+for(i in 1:length(par)) {
+  mod <- glm(log_val ~ diffTimeSeries * Treatment,
+             data = filter(all17.pd, Param == par[i]),
+             family = gaussian(link = "identity"))
+  mf <- data.frame(Param = as.character(par[i]),
+                   Year = "2017",
+                   deviance = mod$deviance,
+                   null.deviance = mod$null.deviance,
+                   diff = mod$null.deviance - mod$deviance,
+                   df.null = mod$df.null,
+                   df.dev = mod$df.residual)
+  modelFit2 <- rbind(mf, modelFit2)
+  e <- as.data.frame(
+    emmeans(mod, pairwise ~ Treatment | diffTimeSeries, type = "response"))
+  df <- e %>% dplyr::select(c(contrasts.contrast, contrasts.diffTimeSeries,
+                              contrasts.SE, contrasts.z.ratio, 
+                              contrasts.p.value))
+  df$Param<- factor(as.character(par[i]))
+  outDF3 <- rbind(df, outDF3)
+  e2 <- as.data.frame(
+    emmeans(mod, pairwise ~ diffTimeSeries | Treatment, type = "response"))
+  df1 <- e2 %>% dplyr::select(c(contrasts.contrast, contrasts.Treatment,
+                                contrasts.SE, contrasts.z.ratio, 
+                                contrasts.p.value))
+  df1$Param <- factor(as.character(par[i]))
+  outDF4 <- rbind(df1, outDF4)
+  
+}
+
+colnames(outDF3) <- c("contrast", "contTS.Trt", "SE", "z.ratio", 
+                      "p.value", "Param")
+outDF3$sign <- ifelse(outDF3$p.value <= 0.05,
+                      "significant",
+                      "not_significant")
+colnames(outDF4) <- c("contrast", "contTS.Trt", "SE", "z.ratio",
+                      "p.value", "Param")
+outDF4$sign <- ifelse(outDF4$p.value <= 0.05,
+                      "significant",
+                      "not_significant")
+sig.TS2 <- outDF3[which(outDF3$sign %in% "significant"),]
+sig.Trt2 <- outDF4[which(outDF4$sign %in% "significant"),]
+outDF3$Year <- "2017"
+outDF4$Year <- "2017"
+
+
+```
+
+
+```{#r}
+##combine
+all <- rbind(outDF1, outDF3, outDF2, outDF4)
+write.table(all, file = "//petalibrary.arcc.uwyo.edu/homes/lvandiep/SoilEcologyLab/Students/Bean/THESIS WRITING/Ch3_Soils/updatedALLGLMS_noblock4.txt", sep = "\t", row.names = FALSE)
+```
+#### Soil variables PERMANOVA
+
+```{r}
+## euclidean distance PERMANOVA with soils variables
+
+
+
+
+# normalize soil variables
+soil18 <- sd16S18[sd16S18$sample_type %in% "bulk",] %>% 
+  dplyr::select(grav_mois, DON_mgkgdrysoil, NPOC_mgkgdrysoil,
+                NH4_mgkgdrysoil, NO3_mgkgdrysoil)
+soil18NMDS <- decostand(soil18, method = "max", MARGIN = 2)
+# make distance matrix of environmental variables
+dissoil <- vegdist(soil18, method = "euclidean")
+
+# ordinate and do PERMANOVA
+adonis(dissoil ~ Treatment*GrazeTime, data = sd16S18[sd16S18$sample_type %in% "bulk",])
+## GrazeTime is significant
+# pairwise comparisons on the significance
+pairwise.adonis(dissoil, factors = sd16S18$GrazeTime[sd16S18$sample_type %in% "bulk"],
+                p.adjust.m = "none") # 24H-1WK, PRE-1WK, 24H-4WK
+## ORDINATE
+# ordinate
+soil18env <- sdNMDS18 %>%  dplyr::select(-mineralN_mgkgdrysoil)
+ord <- metaMDS(soil18NMDS,  distance = "euclidean", k = 2, 
+               trymax = 1000, previousBest = TRUE) 
+stressplot(ord, dissoil) # OK with 2 dimensions
+eft <- envfit(ord, env = soil18env, perm = 1000, na.rm = TRUE)
+eft
+
+# pull NMDS coordinates
+soil18env$GrazeTime <- factor(soil18env$GrazeTime, ordered = TRUE,
+                              levels = c("PRE", "24H", "1WK", "4WK"))
+soil18env$NMDS1 <- ord$points[,1]
+soil18env$NMDS2 <- ord$points[,2]
+# pull significant envfit objects to plots
+species.scores <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+species.scores$species <- row.names(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = soil18env$GrazeTime, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+## create in ggplot2
+ggplot(data = soil18env, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, color = GrazeTime), size = 1) +
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  geom_text(data = species.scores, 
+      aes(x = NMDS1, y = NMDS2, label=species),
+    size = 3) +
+  ggtitle("Soil profile Euclidean distance") +
+  theme_bw()
+
+
+## 2017
+soil17 <- sd16S17[sd16S17$sample_type %in% "bulk",] %>% 
+  dplyr::select(Gravmois, DON_mgkgdrysoil, NPOC_mgkgdrysoil,
+                NH4_mgkgdrysoil, NO3_mgkgdrysoil)
+dissoil17 <- vegdist(soil17, method = "euclidean")
+adonis(dissoil17 ~ Treatment*GrazeTime, data = sd16S17[sd16S17$sample_type %in% "bulk",])
+pairwise.adonis(dissoil17, factors = sd16S17$GrazeTime[sd16S17$sample_type %in% "bulk"],
+                p.adjust.m = "none") 
+# PRE vs 4WK and 1Wk to 4WK
+
+## ORDINATE
+# ordinate
+soil17env <- sdNMDS17 %>% dplyr::select(-minN_mgkgdrysoil) %>% 
+  mutate(Plot = factor(Plot),
+         Block = factor(Block))
+ord17 <- metaMDS(soil17, distance= "euclidean", k = 2, 
+                 trymax = 1000, previousBest = TRUE) 
+stressplot(ord17, dissoil17) # OK with 2 dimensions
+eft <- envfit(ord17, env = soil17env, perm = 1000, na.rm = TRUE)
+eft
+
+# pull NMDS coordinates
+soil17env$GrazeTime <- factor(soil17env$GrazeTime, ordered = TRUE,
+                              levels = c("PRE", "24H", "1WK", "4WK"))
+soil17env$NMDS1 <- ord17$points[,1]
+soil17env$NMDS2 <- ord17$points[,2]
+# pull significant envfit objects to plots
+species.scores <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+species.scores$species <- row.names(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord17, groups = soil17env$GrazeTime, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+## create in ggplot2
+ggplot(data = soil17env, aes(x = NMDS1, y = NMDS2)) +
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  geom_point(aes(x = NMDS1, y = NMDS2, color = GrazeTime), size = 1) +
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group) +
+  geom_segment(data = species.scores,
+               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), colour = "grey") +
+  geom_text(data = species.scores, 
+           aes(x = NMDS1, y = NMDS2, label=species),
+          size = 3) +
+  ggtitle("Soil profile Euclidean distance") +
+  theme_bw()
+
+
+
+```
+
+##### Mantel correlations
+The 2018 enzymatic distance matric significantly correlates to the soil profile
+
+```{r}
+
+# 2018 - EEA vs soil abiotic profiles
+enzdis <- vegdist(enz18NMDS, method = "bray")
+dissoil <- vegdist(soil18, method = "euclidean")
+m <- mantel(xdis = dissoil, ydis = enzdis) # significant
+plot(enzdis ~ dissoil)
+# 2018 - bacterial vs soil abiotic
+disbac <- distance(subset_samples(ps16S18T, sample_type == "bulk"), method = "bray")
+mantel(xdis = disbac, ydis = dissoil) # not signifcant
+# 2018 - bacterial vs enz
+mantel(xdis = disbac, ydis = enzdis) # not significant
+# 2018 - fungal vs soil abiotic
+disfun <- distance(subset_samples(psITS18T, sample_type == "bulk"),
+                   method = "bray")
+mantel(xdis = disfun, ydis = vegdist(soil18[-35,], method = "euclidean")) # not significant
+# 2018 - fungal vs enz
+
+mantel(xdis = disfun, ydis = vegdist(enz18NMDS[-35,], method = "bray")) # significance
+# 2018 - bact vs fungal
+which(!row.names(ps16S18T@sam_data) %in% row.names(psITS18T@sam_data))
+row.names(ps16S18T@sam_data[69,]) # PRE_8_B
+bacsubs = subset_samples(ps16S18T, rownames(ps16S18T@sam_data) != "PRE_8_B")
+mantel(xdis = distance(bacsubs, method = "bray"),
+       ydis = distance(psITS18T, method = "bray")) # significant
+#### 2017 - EEA vs soil abiotic variables
+enzdis17 <- vegdist(enz17NMDS, method = "bray")
+mantel(xdis = dissoil17, ydis = enzdis17) # not significant
+# 2017 - bacterial vs soil abiotic
+mantel(xdis = distance(
+  subset_samples(ps16S17T, sample_type == "bulk"), method = "bray"),
+  ydis = dissoil17) # no significance
+# 2017 - bacterial vs enz
+mantel(xdis = distance(
+  subset_samples(ps16S17T, sample_type == "bulk"), method = "bray"),
+  ydis = enzdis17) # significance
+# 2017 - fungal vs soil abiotic
+mantel(xdis = distance(
+  subset_samples(psITS17T, sample_type == "bulk"), method = "bray"),
+  ydis = dissoil17) # no significance
+# 2017 - fungal vs EEA
+mantel(xdis = distance(
+  subset_samples(psITS17T, sample_type == "bulk"), method = "bray"),
+  ydis = enzdis17) # significance
+#2017 - fungal vs bacterial
+which(!rownames(psITS17T@sam_data) %in% rownames(ps16S17T@sam_data))
+rownames(psITS17T@sam_data[36])
+mantel(xdis = distance(ps16S17T, method = "bray"),
+       ydis = distance(subset_samples(psITS17T, rownames(psITS17T@sam_data) != "24H_9_R"),
+                       method = "bray")) # significant
+```
+
