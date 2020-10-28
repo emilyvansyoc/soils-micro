@@ -123,3 +123,12 @@ for(i in 1:length(trt)) {
 }
 
 print(pvalTrt) # no significance
+
+# function for standard error
+se <- function(x) sqrt(var(x)/length(x))
+# get data for supplementary materials since this isn't presented in % diff
+df <- nit %>% 
+  group_by(Treatment, GrazeTime) %>% 
+  summarize(meannitr = round(mean(NO3_mgkgdrysoil), 3),
+            senitr = round(se(NO3_mgkgdrysoil), 3)) 
+write.table(df, "./data/nitrate-summary.txt", sep = "\t", row.names = FALSE)

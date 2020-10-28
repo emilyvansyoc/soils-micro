@@ -40,6 +40,20 @@ enzpd <- percentDifferences(df = enz,
                             timeLevels = c("PRE", "24H", "1WK", "4WK"),
                             level1 = "PRE") 
 
+## get info for summary table
+sum <- enzpd %>% 
+  select(Plot, Block, Treatment, diffTimeSeries, AG, BG, BX, CBH, 
+         LAP, NAG, PEROX, PHENOX, PHOS) %>% 
+  pivot_longer(cols = c(AG, BG, BX, CBH, LAP, NAG, PEROX, PHENOX, PHOS),
+               names_to = "Type", values_to = "percentdiff") %>% 
+  group_by(Treatment, diffTimeSeries, Type) %>% 
+  summarize(mean = round(mean(percentdiff), 2),
+            se = round(se(percentdiff), 2)) %>% 
+  pivot_wider(names_from = Type, values_from = c(mean, se))
+
+#write.table(sum, file = "./data/enzymes-summary.txt", sep = "\t", row.names = FALSE)
+  
+
 # make vertical and add log transformation
 enzlog <- enzpd  %>% 
   # make vertical
@@ -49,6 +63,7 @@ enzlog <- enzpd  %>%
   pivot_wider(names_from = diffTimeSeries, values_from = value) %>% 
   mutate(PRE = 0) %>% 
   pivot_longer(cols = c(PRE, diff_24H, diff_1WK, diff_4WK), names_to = "Time", values_to = "value") 
+
 
 ### ---- GLM loop ----
 
@@ -125,19 +140,20 @@ dat <- enzlog %>%
 
 
 # plot individual enzymes (so we need to remove the ratios)
-enzl <- paste("AG", "BG", "BX", "CBH", "NAG", "LAP", "PHOS", "PEROX", "PHENOX")
+enzl <- paste("AG", "BG", "BX", "CBH", "NAG", "LAP", "PEROX", "PHENOX")
 plotdat <- dat %>% filter(str_detect(enzl, Type)) 
 
 
-
+# PLOT
 
 ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
+  
+  #geom_hline(yintercept = 0, color = "black") +
   geom_point(aes(color = Treatment)) +
   geom_line(aes(linetype = Treatment, color = Treatment)) +
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se,
                     linetype = Treatment, color = Treatment),
                 width = 0.1) +
-  geom_hline(yintercept = 0, color = "black") +
   facet_wrap(~Type, scales = "free") +
   scale_color_manual(values = treatmentcols) +
   labs(x = "Sampling Time", y = "% change from PRE")+
@@ -145,6 +161,48 @@ ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
 
 # save
 #ggsave("./data/plots/enzymes-indiv-lineplot.png", plot = last_plot(), dpi = "print")
+
+# for simplicity's sake, divide into C cycling and other
+ccy <- c("AG", "BG", "BX", "CBH")
+plotdat <- dat %>% filter(Type %in% ccy) 
+
+# PLOT
+ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
+  
+  #geom_hline(yintercept = 0, color = "black") +
+  geom_point(aes(color = Treatment)) +
+  geom_line(aes(linetype = Treatment, color = Treatment)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se,
+                    linetype = Treatment, color = Treatment),
+                width = 0.1) +
+  facet_wrap(~Type, scales = "free") +
+  scale_color_manual(values = treatmentcols) +
+  labs(x = "Sampling Time", y = "% change from PRE")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# save
+#ggsave("./data/plots/enzymes-Ccycl-lines.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+
+other <- c("LAP", "NAG", "PEROX", "PHENOX")
+plotdat <- dat %>% filter(Type %in% other) 
+
+# PLOT
+ggplot(data = plotdat, aes(x = Time, y = mean, group = Treatment)) +
+  
+  #geom_hline(yintercept = 0, color = "black") +
+  geom_point(aes(color = Treatment)) +
+  geom_line(aes(linetype = Treatment, color = Treatment)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se,
+                    linetype = Treatment, color = Treatment),
+                width = 0.1) +
+  facet_wrap(~Type, scales = "free") +
+  scale_color_manual(values = treatmentcols) +
+  labs(x = "Sampling Time", y = "% change from PRE")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# save
+#ggsave("./data/plots/enzymes-other-lines.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+
 
 
 # boxplot showing the spike in HDG in BG, CBH, NAG
@@ -170,9 +228,9 @@ plotdat <- dat1 %>% filter(str_detect(enzl, Type))
 ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill = Treatment)) +
   geom_boxplot() +
   scale_fill_manual(values = treatmentcols) +
-  labs(x = "Enzyme", y = "% change from 24H to PRE")
+  labs(x = "Enzyme", y = "% change from PRE to 24H")
 # save
-#ggsave("./data/plots/enzymes-24h-HDGspike.png", plot = last_plot(), dpi = "print")
+#ggsave("./data/plots/enzymes-24h-HDGspike.png", plot = last_plot(), dpi = 600, width = 6.48, height = 4.67, units = "in")
 
 # get only PHOS b/c it's weird
 enzl <- paste("PHOS")
