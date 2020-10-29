@@ -383,6 +383,8 @@ sd <- sd16S18 %>%
 # PERMANOVA testing
 dis <- vegdist(enzd)
 adonis(dis ~ Treatment * GrazeTime, data = sd, permutations = 999) # GrazeTime is significant
+# pairwise for GrazeTime
+pairwise.adonis(x= dis, factors = sd$GrazeTime, p.adjust.m = "bonferroni") # 1WK vs 4WK
 
 # ordinate
 ord <- metaMDS(enzd, distance = "bray", k = 2, trymax = 1000, previousBest = TRUE)
@@ -455,8 +457,7 @@ dis <- vegdist(sdf, method = "euclidean")
 # get sample data
 sd <- sd16S18 %>% 
   filter(sample_type == "bulk") %>% 
-  select(-c(biomass_kg_plot, grav_mois, DON_mgkgdrysoil, NPOC_mgkgdrysoil,
-            mineralN_mgkgdrysoil, NH4_mgkgdrysoil, NO3_mgkgdrysoil, sample_type)) %>% 
+  select(-c(biomass_kg_plot, sample_type, NO3_mgkgdrysoil, mineralN_mgkgdrysoil)) %>% 
   rownames_to_column(var = "name") %>% 
   left_join(dc, by = "name") %>% 
   left_join(dcs, by = "name") %>% 
@@ -464,6 +465,8 @@ sd <- sd16S18 %>%
 
 # PERMANOVA
 adonis(dis ~ Treatment * GrazeTime, data = sd) # GrazeTime is significant
+# pairwise for GrazeTime
+pairwise.adonis(x= dis, factors = sd$GrazeTime, p.adjust.m = "bonferroni") # 1WK vs 4WK, 24H vs 4WK, PRE vs 24H
 
 # Ordinate
 ord <- metaMDS(sdf,  k = 2, trymax = 1000, previousBest = TRUE)
