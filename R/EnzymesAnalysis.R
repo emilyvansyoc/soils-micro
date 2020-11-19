@@ -426,7 +426,7 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # ORDINATION POINTS
   geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
   # GROUP NAMES AT ELLIPSE CENTER 
-  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
   # ENVFIT ARROWS
   geom_segment(data = sigspecies,
                aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
@@ -442,6 +442,10 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   labs(color = "Sampling Time") +
   # add constant colors for each Time
   scale_color_manual(values = timecols)
+
+# save
+#ggsave("./data/plots/EEA-NMDS-Time.png", plot = last_plot(), dpi = 300, height = 4.67, width = 6.48, units = "in")
+
 
 ## ---- Edaphic PERMANOVA ----
 

@@ -64,6 +64,9 @@ adonis(dis ~ Treatment * GrazeTime + sample_type,
 pairwise.adonis2(dis ~  GrazeTime * Treatment+ sample_type,
                              data = sdITS18,
                              p.adjust.m = "bon", perm = 1000)
+pairwise.adonis2(dis ~  Treatment*GrazeTime+ sample_type,
+                 data = sdITS18,
+                 p.adjust.m = "bon", perm = 1000)
  
  
 ## BULK SOIL ONLY
@@ -261,10 +264,10 @@ dis <- distance(ps16S18T, method = "bray")
 
 adonis(dis ~ Treatment * GrazeTime + sample_type,
        data = sd16S18, permutations = 999) # only GrazeTime
-pairwise.adonis2(dis ~  GrazeTime * Treatment,
+pairwise.adonis2(dis ~  GrazeTime,
                  data = sd16S18,
                  p.adjust.m = "bon", perm = 1000) # all GrazeTime comparisons are significant
-pairwise.adonis2(dis ~  Treatment * GrazeTime,
+pairwise.adonis2(dis ~  Treatment,
                  data = sd16S18,
                  p.adjust.m = "bon", perm = 1000)  # NG vs HDG difference; likely in the 1WK-4WK time above 
 
@@ -273,7 +276,7 @@ disb <- distance(subset_samples(ps16S18T, sample_type == "bulk"), method = "bray
 adonis(disb ~ Treatment * GrazeTime,
        data = filter(sd16S18, sample_type == "bulk"), permutations = 999) #GrazeTime is significant
 # because GrazeTime is significant, look at pairwise treatment comparisons
-pairwise.adonis2(disb ~  GrazeTime * Treatment,
+pairwise.adonis2(disb ~  GrazeTime,
                  filter(sd16S18, sample_type == "bulk"),
                  p.adjust.m = "bon", perm = 1000) # PRE vs 24H, PRE vs 1WK
 
@@ -283,7 +286,7 @@ adonis(disr ~ Treatment * GrazeTime,
        data = filter(sd16S18, sample_type == "rhizospheric"), permutations = 999)  # also GrazeTime
 
 # because GrazeTime is significant, look at pairwise treatment comparisons
-pairwise.adonis2(disr ~  GrazeTime * Treatment,
+pairwise.adonis2(disr ~  GrazeTime,
                  filter(sd16S18, sample_type == "rhizospheric"),
                  p.adjust.m = "bon", perm = 1000) # PRE vs 24H, 24H vs 4WK, PRE vs 1WK, 24H vs 1WK
 

@@ -8,12 +8,15 @@ theme_set(theme_bw())
 # read data from GLMs
 source("https://github.com/EmilyB17/soils-micro/raw/master/R/BiogeochemicalGLMs.R")
 
+# get RColorBrewer colors
+source("./R/RColorBrewer.R")
+
 # function for standard error
 se <- function(x) sqrt(var(x)/length(x))
 
 # set brewer colors
-brewer.pal(n = 3, name = "Dark2")
-treatmentcols <- c("HDG" = "#1B9E77", "LDG" =  "#D95F02", "NG" = "#7570B3")
+#brewer.pal(n = 3, name = "Dark2")
+#treatmentcols <- c("HDG" = "#1B9E77", "LDG" =  "#D95F02", "NG" = "#7570B3")
 
 # get backtransformed data
 dat <- datpd %>% 
@@ -51,10 +54,15 @@ datv <- dat %>%
                            `4WK` = "diff_4WK"),
          param = factor(param),
          param = fct_recode(param,
-                            DON = "DON_mgkgdrysoil",
-                            Moisture = "grav_mois",
-                            Ammonium = "NH4_mgkgdrysoil",
-                            DOC = "NPOC_mgkgdrysoil"))
+                            `B. Dissolved organic nitrogen` = "DON_mgkgdrysoil",
+                            `A. Soil water content` = "grav_mois",
+                            `D. Ammonium` = "NH4_mgkgdrysoil",
+                            `C. Dissolved organic carbon` = "NPOC_mgkgdrysoil")) %>% 
+  # order the variables based on order in the text
+  mutate(param = factor(param, ordered = TRUE, levels = c("A. Soil water content",
+                                                          "B. Dissolved organic nitrogen",
+                                                          "C. Dissolved organic carbon",
+                                                          "D. Ammonium")))
 
 
 # plot all data
@@ -68,9 +76,20 @@ ggplot(data = datv,
   labs(x = "Sampling Time", y = "% change from PRE") +
   scale_color_manual(values = treatmentcols) + 
   facet_wrap(~param, scales = "free") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  theme(
+    # pivot x text to 45 degrees
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    # remove grey background from facet labels
+        strip.background = element_rect(
+          fill="white", linetype=0
+        ), 
+    # change font size of facet labels
+        strip.text.x = element_text(size = 11, hjust = 0)) +
+  # add extra white space at top for significance asterisks
+  scale_y_continuous(expand = expansion(mult = c(0.1, 0.1), add = c(0, 0)))
 
 # save
-#ggsave("./data/plots/all-time-lineplot.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+#ggsave("./data/plots/all-time-lineplot-v2.png", plot = last_plot(), dpi = 300, height = 4.67, width = 6.48, units = "in")
 
 
