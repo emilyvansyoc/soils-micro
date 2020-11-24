@@ -1,6 +1,8 @@
 ## Vegetation recovery
 
 require(tidyverse)
+require(emmeans)
+require(ggpubr)
 
 # function for standard error
 se <- function(x) sqrt(var(x)/length(x))
@@ -26,6 +28,14 @@ datpd <- percentDifferences(df = dat,
                             timeLevels = c("PRE", "24H", "1WK", "4WK"),
                             level1 = "PRE") 
 
+# add PRE at 0
+datf <- datpd %>% 
+  # add PRE at 0
+  pivot_wider(names_from = diffTimeSeries, values_from = reading_rpm) %>% 
+  mutate(PRE = 0) %>% 
+  pivot_longer(cols = c(PRE, diff_24H, diff_1WK, diff_4WK), names_to = "Time", values_to = "reading_rpm")
+  
+  
 datsum <- datpd %>% 
   pivot_wider(names_from = diffTimeSeries, values_from = reading_rpm) %>% 
   mutate(PRE = 0) %>%
@@ -119,3 +129,68 @@ utlo <- dat %>%
   mutate(ut = ((T1WK - TPRE) / TPRE) * 100) %>% 
   summarize(avg = mean(ut),
             se = se(ut))
+
+## ---- GLM on Treatment-Time ----
+
+# sufficiently normal so no need to log transform
+
+## GLM
+mod <- glm(reading_rpm ~ Time * Treatment,
+           data = datf,
+           family = gaussian(link = "identity"))
+# check residuals for normality
+shapiro.test(resid(mod))
+
+# add to modelFit
+modelFit <-  data.frame(Param = "RPM",
+                              deviance = mod$deviance,
+                              null.deviance = mod$null.deviance,
+                              diff = mod$null.deviance - mod$deviance,
+                              df.null = mod$df.null,
+                              df.dev = mod$df.residual)  
+
+# post-hoc test with emmeans
+posthocTrt <- data.frame(Param = "RPM",
+                         emmeans(mod, pairwise ~ Treatment | Time, type = "response")$contrasts)
+
+# post-hoc test with emmeans
+posthocTime <- data.frame(Param = "RPM",
+                          emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts)
+
+### Significance
+sigtrt <- posthocTrt %>% filter(p.value < 0.05)
+sigtime <- posthocTime %>% filter(p.value < 0.05)
+
+# get mean and se for the plot
+datsum <- datf %>% 
+  group_by(Treatment, Time) %>% 
+  summarize(mean = mean(reading_rpm),
+            se = se(reading_rpm))  %>% 
+  mutate(Time = fct_recode(Time,
+                           PRE = "PRE",
+                           `24H` = "diff_24H",
+                           `1WK` = "diff_1WK",
+                           `4WK` = "diff_4WK"),
+         Treatment = fct_recode(Treatment,
+                                HDG = "HI", LDG = "LO", NG = "NO")) %>% 
+  mutate(Time = factor(Time, ordered = TRUE, levels = c("PRE", "24H", "1WK", "4WK")))
+
+### rebuild the manuscript plot with ggpubr
+ggplot(data = datsum, 
+       aes(x = Time, y = mean, group = Treatment)) +
+  geom_point(aes(color = Treatment), size = 2) +
+  geom_line(aes(linetype = Treatment, color = Treatment), size = 1.5) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se,
+                    color = Treatment),
+                width = 0.1, size = 1) +
+  labs(x = "Sampling Time", y = "Relative vegetation change from PRE (%)") +
+  scale_color_manual(values = treatmentcols) + 
+  
+  theme(
+    # pivot x text to 45 degrees
+    axis.text.x = element_text(angle = 45, hjust = 1)) +
+  # add extra white space at top for significance asterisks
+  scale_y_continuous(expand = expansion(mult = c(0.1, 0.1), add = c(0, 0)))
+
+# save
+#ggsave("./data/plots/veg-recovery-v2.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
