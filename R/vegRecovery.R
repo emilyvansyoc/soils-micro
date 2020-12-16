@@ -178,13 +178,14 @@ datsum <- datf %>%
 ### rebuild the manuscript plot with ggpubr
 ggplot(data = datsum, 
        aes(x = Time, y = mean, group = Treatment)) +
-  geom_point(aes(color = Treatment), size = 2) +
+  geom_point(aes(color = Treatment, shape = Treatment), size = 4) +
   geom_line(aes(linetype = Treatment, color = Treatment), size = 1.5) +
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se,
                     color = Treatment),
                 width = 0.1, size = 1) +
   labs(x = "Sampling Time", y = "Relative vegetation change from PRE (%)") +
   scale_color_manual(values = treatmentcols) + 
+  scale_shape_manual(values = c(19, 15, 4)) +
   
   theme(
     # pivot x text to 45 degrees
@@ -193,4 +194,4 @@ ggplot(data = datsum,
   scale_y_continuous(expand = expansion(mult = c(0.1, 0.1), add = c(0, 0)))
 
 # save
-#ggsave("./data/plots/veg-recovery-v2.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+#ggsave("./data/plots/veg-recovery-v3.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
