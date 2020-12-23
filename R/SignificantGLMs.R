@@ -68,7 +68,7 @@ datv <- dat %>%
 # plot all data
 ggplot(data = datv, 
        aes(x = Time, y = mean, group = Treatment)) +
-  geom_point(aes(color = Treatment, shape = Treatment), size = 3) +
+  geom_point(aes(color = Treatment, shape = Treatment), size = 2) +
   geom_line(aes(linetype = Treatment, color = Treatment)) +
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se,color = Treatment),
                 width = 0.1) +

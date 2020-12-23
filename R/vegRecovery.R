@@ -149,6 +149,9 @@ modelFit <-  data.frame(Param = "RPM",
                               df.null = mod$df.null,
                               df.dev = mod$df.residual)  
 
+# get F statistic and DF
+anova(mod, test = "F")
+
 # post-hoc test with emmeans
 posthocTrt <- data.frame(Param = "RPM",
                          emmeans(mod, pairwise ~ Treatment | Time, type = "response")$contrasts)
@@ -170,8 +173,8 @@ datsum <- datf %>%
                            PRE = "PRE",
                            `24H` = "diff_24H",
                            `1WK` = "diff_1WK",
-                           `4WK` = "diff_4WK"),
-         Treatment = fct_recode(Treatment,
+                           `4WK` = "diff_4WK")) %>% 
+  mutate(Treatment = fct_recode(Treatment,
                                 HDG = "HI", LDG = "LO", NG = "NO")) %>% 
   mutate(Time = factor(Time, ordered = TRUE, levels = c("PRE", "24H", "1WK", "4WK")))
 

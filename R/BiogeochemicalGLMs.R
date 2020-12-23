@@ -44,14 +44,14 @@ datlog <- datpd %>%
 # get summarized data for significance tables
 sum <- datpd %>% 
   group_by(Treatment, diffTimeSeries) %>% 
-  summarize(meanDON = mean(DON_mgkgdrysoil),
-            seDON = se(DON_mgkgdrysoil),
-            meanGrav = mean(grav_mois),
-            seGrav = se(grav_mois),
-            meanNH4 = mean(NH4_mgkgdrysoil),
-            seNH4 = se(NH4_mgkgdrysoil),
-            meanDOC = mean(NPOC_mgkgdrysoil),
-            seDOC = se(NPOC_mgkgdrysoil)) %>% 
+  summarize(meanDON = round(mean(DON_mgkgdrysoil), 3),
+            seDON = round(se(DON_mgkgdrysoil), 3),
+            meanGrav = round(mean(grav_mois), 3),
+            seGrav = round(se(grav_mois), 3),
+            meanNH4 = round(mean(NH4_mgkgdrysoil), 3),
+            seNH4 = round(se(NH4_mgkgdrysoil), 3),
+            meanDOC = round(mean(NPOC_mgkgdrysoil), 3),
+            seDOC = round(se(NPOC_mgkgdrysoil), 3)) %>% 
   ungroup()
 #write.table(sum, "./data/biophys-percentchange-sum.txt", sep = "\t", row.names = FALSE)
 
@@ -77,6 +77,7 @@ qqline(npoc$log_NPOC_mgkgdrysoil)
 mod <- glm(log_NPOC_mgkgdrysoil ~ Time * Treatment,
            data = npoc,
            family = gaussian(link = "identity"))
+
 # check residuals for normality
 shapiro.test(resid(mod))
 
@@ -87,7 +88,11 @@ modelFit <-  rbind(modelFit,
                               null.deviance = mod$null.deviance,
                               diff = mod$null.deviance - mod$deviance,
                               df.null = mod$df.null,
-                              df.dev = mod$df.residual))   
+                              df.dev = mod$df.residual))  
+
+# get ANOVA table of the GLM
+# F test is used for Gaussian distributions1
+anova(mod, test = "F")
 
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
@@ -98,6 +103,7 @@ posthocTrt <- rbind(posthocTrt,
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "NPOC",
                                 emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
+
 
 ### ---- NH4 (Ammonium) ----
 
@@ -128,6 +134,10 @@ modelFit <-  rbind(modelFit,
                               df.null = mod$df.null,
                               df.dev = mod$df.residual))   
 
+# get ANOVA table of the GLM
+# F test is used for Gaussian distributions1
+anova(mod, test = "F")
+
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "NH4",
@@ -137,6 +147,9 @@ posthocTrt <- rbind(posthocTrt,
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "NH4",
                                 emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
+
+
+
 
 ### ---- DON (dissolved organic nitrogen) ----
 
@@ -167,6 +180,10 @@ modelFit <-  rbind(modelFit,
                               df.null = mod$df.null,
                               df.dev = mod$df.residual))   
 
+# get ANOVA table of the GLM
+# F test is used for Gaussian distributions1
+anova(mod, test = "F")
+
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "DON",
@@ -176,6 +193,9 @@ posthocTrt <- rbind(posthocTrt,
 posthocTime <- rbind(posthocTime,
                      data.frame(Param = "DON",
                                 emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
+
+
+
 
 ### ---- GRAVIMETRIC MOISTURE ----
 
@@ -209,6 +229,10 @@ modelFit <-  rbind(modelFit,
                               df.null = mod$df.null,
                               df.dev = mod$df.residual))   
 
+# get ANOVA table of the GLM
+# F test is used for Gaussian distributions1
+anova(mod, test = "F")
+
 # post-hoc test with emmeans
 posthocTrt <- rbind(posthocTrt,
                     data.frame(Param = "GravMois",
@@ -219,8 +243,10 @@ posthocTime <- rbind(posthocTime,
                      data.frame(Param = "GravMois",
                                 emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
 
+
+
 ### ---- write output tables ----
 
 
-#write.table(posthocTime, "./data/GLM-posthoc-Time.txt", sep = "\t", row.names = FALSE)
-#write.table(posthocTrt, "./data/GLM-posthoc-Treatment.txt", sep = "\t", row.names = FALSE)
+#write.table(posthocTime, "./data/results/GLM-posthoc-Time.txt", sep = "\t", row.names = FALSE)
+#write.table(posthocTrt, "./data/results/GLM-posthoc-Treatment.txt", sep = "\t", row.names = FALSE)

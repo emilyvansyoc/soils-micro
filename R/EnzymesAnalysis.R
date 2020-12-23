@@ -10,6 +10,10 @@ if(!require(ggordiplots)) {
 require(emmeans)
 source("https://raw.githubusercontent.com/EmilyB17/grazing_soil_microbes/master/R/CustomFunctions/FUNCTION_percentDifferences.R")
 source("./R/RColorBrewer.R")
+if(!require(pairwiseAdonis)) {
+  remotes::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+  require(pairwiseAdonis)
+}
 
 # read cn for C:DOC and N:DON ratios
 cn <- read.table("./data/2018CN.txt", sep = "\t", header = TRUE) %>% 
@@ -76,6 +80,7 @@ enzlog <- enzpd  %>%
 modelFit <- data.frame()
 posthocTrt <- data.frame()
 posthocTime <- data.frame()
+fStat <- data.frame()
 
 types <- unique(enzlog$Type)
 
@@ -93,6 +98,13 @@ for(i in 1:length(types)) {
                    df.null = mod$df.null,
                    df.dev = mod$df.residual)
   modelFit <- rbind(mf, modelFit)
+  # get anova output info
+  av <- anova(mod, test = "F")
+  avd <- data.frame(Type = as.character(types[i]),
+                    Comp = c("Time", "Treatment", "Interaction"),
+                    fstat = av$F[-1],
+                    pval = round(av$`Pr(>F)`[-1], 3))
+  fStat <- rbind(avd, fStat)
   # posthoc for treatment differences
   posthocTrt <- rbind(posthocTrt,
                       data.frame(Type = types[i],
@@ -104,6 +116,9 @@ for(i in 1:length(types)) {
                                   emmeans(mod, pairwise ~ Time | Treatment, type = "response")$contrasts))
   
 }
+
+# write anova output table
+#write.table(fStat, file = "./data/results/enzyme-GLM-output.txt", sep = "\t", row.names = FALSE)
 
 ### ---- Significance ----
 
@@ -368,7 +383,7 @@ dcs <- dcs %>% rownames_to_column(var = "name")
 which(!row.names(dcs) %in% row.names(dc))
 row.names(dcs[35,]) # PRE_8_B
 dc["PRE_8_B",] <- 0
-dc <- dc[order(row.names(dc)),]
+dc <- dc[order(row.name0s(dc)),]
 dc <- dc %>% rownames_to_column(var = "name")
 
 # combine with other sample data
@@ -428,12 +443,12 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # GROUP NAMES AT ELLIPSE CENTER 
   #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
   # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+ # geom_segment(data = sigspecies,
+  #             aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+   #            arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
   # ARROW TEXT
-  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-            size = 3) +
+  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+   #         size = 3) +
   # SCALE CORRECTLY
   coord_fixed() +
   # THEME
