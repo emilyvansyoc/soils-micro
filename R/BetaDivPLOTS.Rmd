@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 ```
 
 
@@ -75,7 +75,7 @@ sdITS18$GrazeTime <- factor(sdITS18$GrazeTime, ordered = TRUE,
 
 # statistical testing
 dis <- distance(psITS18T, method = "bray")
-adonis(dis ~ Treatment * GrazeTime,
+adonis(dis ~ sample_type + Treatment * GrazeTime,
        data = sdITS18, permutations = 999) # all are significant except Interactions
 
 # get Treatment effects
@@ -98,21 +98,14 @@ eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
 
 ```
 
-There are significant differences between each Treatment; NO vs LO, NO vs HI, and LO vs HI (this also has a time effect).There is also a Treatment effect in 24H vs 1Wk, 1WK vs 4WK, PRE vs 1WK, and 24H vs 4WK (also has a Time effect). (PRE vs 24H is not significant)
 
-To tease apart these differences, we plot an NMDS and do an adonis test for all 3 treatments by Time.
 
-## One NMDS for all data
+
+## Plot by Time
 
 ```{r}
 
-# ordinate
-ord <- ordinate(psITS18T, method = "NMDS", distance = "bray", k = 2, 
-                trymax = 1000, previousBest = TRUE) 
-stressplot(ord, dis) #OK with 2 dimensions
-eft <- envfit(ord, env = sdITS18, perm = 1000, na.rm = TRUE)
-eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
-
+# plot by TIME
 
 ## 1.  get NMDS coordinates from ordination object
 coords <- as.data.frame(scores(ord, display = "sites")) %>% 
@@ -132,7 +125,7 @@ sigspecies <- spp %>% filter(species %in% sigspecies)
 
 ## 3. Pull ellipse information using gg_ordiplot package
 # save gg_ordiplot object to get ellipse values
-plot <-  gg_ordiplot(ord, groups = sdITS18$Treatment, label = FALSE, plot = FALSE)
+plot <-  gg_ordiplot(ord, groups = sdITS18$GrazeTime, label = FALSE, plot = FALSE)
 # get ellipse coordinates
 df_ell <- plot$df_ellipse
 # get label coordinates for ellipse centers
@@ -146,16 +139,16 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # ELLIPSES
   geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
   # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Time, color = Treatment), size = 1) +
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Treatment, color = Time), size = 1) +
   # GROUP NAMES AT ELLIPSE CENTER 
-  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
   # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  #geom_segment(data = sigspecies,
+   #            aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+    #           arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
   # ARROW TEXT
-  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-            size = 3) +
+  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+   #         size = 3) +
   # SCALE CORRECTLY
   coord_fixed() +
   # THEME
@@ -175,7 +168,7 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # ELLIPSES
   geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
   # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Time, color = Treatment), size = 1) +
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Treatment, color = Time), size = 1) +
   # GROUP NAMES AT ELLIPSE CENTER 
   #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
   # ENVFIT ARROWS
@@ -183,341 +176,62 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
    #            aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
     #           arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
   # ARROW TEXT
- # geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-  #          size = 3) +
+  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+  #         size = 3) +
   # SCALE CORRECTLY
   coord_fixed() +
   # THEME
   theme_bw() +
   # CHANGE LEGEND TITLE
-  labs(color = "Treatment", shape = "Time") +
+  labs(color = "Time", shape = "Treatment") +
   # colors for each treatment
-  scale_color_manual(values = treatmentcols)
+  scale_color_manual(values = timecols)
 # save
-#ggsave("./data/plots/NMDS-fungi-Treatment-nolabels.png", plot = last_plot(), dpi = "print")
+#ggsave("./data/plots/NMDS-fungi-Time-noarrows-nolabels.png", plot = last_plot(), dpi = 300, width = 6.52, height = 4.83, units = "in")
 
 ```
 
-
-## Individual plots
-
-#### HDG
+# plot by Soil type (bulk vs rhizo) 
 
 ```{r}
 
-## HDG
-
-tax <- subset_samples(psITS18T, Treatment == "HI")
-dat <- dat %>% filter(Treatment == "HI")
-
-dis <- distance(tax, method = "bray")
-
-pairwise.adonis2(dis ~  GrazeTime,
-                 data = dat,
-                 p.adjust.m = "bon", perm = 1000) ## no differences
-
-# Ordinate
-ord <- ordinate(tax, method = "NMDS", distance = "bray", k = 2, 
-                trymax = 1000, previousBest = TRUE) 
-stressplot(ord, dis) #OK with 2 dimensions
-eft <- envfit(ord, env = dat, perm = 1000, na.rm = TRUE)
-eft
-
-# Plot - WITH LABELS
-## 1.  get NMDS coordinates from ordination object
-coords <- as.data.frame(scores(ord, display = "sites")) %>% 
-  # and add grouping variable
-  mutate(Treatment = dat$Treatment,
-         Time = dat$GrazeTime,
-         Type = dat$sample_type)
-
-## 2.  get significant envfit objects to plot as arrows
-spp <- as.data.frame(scores(eft, display = "vectors")) 
-spp$species <- rownames(spp)
-# subset to only p < 0.05 vectors to de-clutter 
-sigs <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
-sigspecies <- rownames(sigs)
-# subset
-sigspecies <- spp %>% filter(species %in% sigspecies)
-
-## 3. Pull ellipse information using gg_ordiplot package
+# plot by Soiltype
 # save gg_ordiplot object to get ellipse values
-plot <-  gg_ordiplot(ord, groups = dat$GrazeTime, label = FALSE, plot = FALSE)
+plot <-  gg_ordiplot(ord, groups = sdITS18$sample_type, label = FALSE, plot = FALSE)
 # get ellipse coordinates
 df_ell <- plot$df_ellipse
 # get label coordinates for ellipse centers
 NMDS.mean <- plot$df_mean.ord
 # pull NMDS coordinates
 ord.data <- plot$df_ord 
-
-## Plot by TIME - WITH LABELS
 ## create in ggplot2
 ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # ELLIPSES
   geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
   # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Type), size = 1) +
+  # ENVFIT ARROWS
+  #geom_segment(data = sigspecies,
+   #            aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+    #           arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
   # GROUP NAMES AT ELLIPSE CENTER 
   annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
-  # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
-  # ARROW TEXT
-  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-            size = 3) +
-  # SCALE CORRECTLY
-  coord_fixed() +
-  # THEME
-  theme_bw() +
-  # CHANGE LEGEND TITLE
-  labs(color = "Sampling Time") +
-  # add constant colors for each Time
-  scale_color_manual(values = timecols)
-
-## Plot by Time - WITHOUT LABELS
-ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
-  # ELLIPSES
-  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
-  # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
-  # GROUP NAMES AT ELLIPSE CENTER 
-  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
-  # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  
   # ARROW TEXT
   #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-     #       size = 3) +
+   #         size = 3) +
   # SCALE CORRECTLY
   coord_fixed() +
   # THEME
   theme_bw() +
   # CHANGE LEGEND TITLE
-  labs(color = "Sampling Time") +
-  # add constant colors for each Time
-  scale_color_manual(values = timecols)
+  labs(color = "Soil Type")
 # save
-#ggsave("./data/plots/NMDS-fungi-HDG-nolabels.png", plot = last_plot(), dpi = "print")
+#ggsave("./data/plots/NMDS-fungi-soil-type.png", plot = last_plot(), dpi = 600, width = 6.52, height = 4.83, units = "in")
+
 
 ```
 
-#### LDG
-
-```{r}
-
-
-
-
-## Ordinate and plot each individual treatment
-
-
-## LDG
-
-tax <- subset_samples(psITS18T, Treatment == "LO")
-dat <- sdITS18 %>% filter(Treatment == "LO")
-
-dis <- distance(tax, method = "bray")
-
-pairwise.adonis2(dis ~  GrazeTime,
-                 data = dat,
-                 p.adjust.m = "bon", perm = 1000) ## PRE vs 24H, 24H vs 4WK
-
-# Ordinate
-ord <- ordinate(tax, method = "NMDS", distance = "bray", k = 2, 
-                trymax = 1000, previousBest = TRUE) 
-stressplot(ord, dis) #OK with 2 dimensions
-eft <- envfit(ord, env = dat, perm = 1000, na.rm = TRUE)
-eft
-
-# Plot - WITH LABELS
-## 1.  get NMDS coordinates from ordination object
-coords <- as.data.frame(scores(ord, display = "sites")) %>% 
-  # and add grouping variable
-  mutate(Treatment = dat$Treatment,
-         Time = dat$GrazeTime,
-         Type = dat$sample_type)
-
-## 2.  get significant envfit objects to plot as arrows
-spp <- as.data.frame(scores(eft, display = "vectors")) 
-spp$species <- rownames(spp)
-# subset to only p < 0.05 vectors to de-clutter 
-sigs <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
-sigspecies <- rownames(sigs)
-# subset
-sigspecies <- spp %>% filter(species %in% sigspecies)
-
-## 3. Pull ellipse information using gg_ordiplot package
-# save gg_ordiplot object to get ellipse values
-plot <-  gg_ordiplot(ord, groups = dat$GrazeTime, label = FALSE, plot = FALSE)
-# get ellipse coordinates
-df_ell <- plot$df_ellipse
-# get label coordinates for ellipse centers
-NMDS.mean <- plot$df_mean.ord
-# pull NMDS coordinates
-ord.data <- plot$df_ord 
-
-## Plot by TIME - WITH LABELS
-## create in ggplot2
-ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
-  # ELLIPSES
-  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
-  # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
-  # GROUP NAMES AT ELLIPSE CENTER 
-  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
-  # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
-  # ARROW TEXT
-  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-            size = 3) +
-  # SCALE CORRECTLY
-  coord_fixed() +
-  # THEME
-  theme_bw() +
-  # CHANGE LEGEND TITLE
-  labs(color = "Sampling Time") +
-  # add constant colors for each Time
-  scale_color_manual(values = timecols)
-
-## Plot by Time - WITHOUT LABELS
-ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
-  # ELLIPSES
-  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
-  # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
-  # GROUP NAMES AT ELLIPSE CENTER 
-  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
-  # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
-  # ARROW TEXT
-  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-     #       size = 3) +
-  # SCALE CORRECTLY
-  coord_fixed() +
-  # THEME
-  theme_bw() +
-  # CHANGE LEGEND TITLE
-  labs(color = "Sampling Time") +
-  # add constant colors for each Time
-  scale_color_manual(values = timecols)
-# save
-#ggsave("./data/plots/NMDS-fungi-LDG-nolabels.png", plot = last_plot(), dpi = "print")
-
-```
-
-#### NG
-
-```{r}
-
-
-
-
-## Ordinate and plot each individual treatment
-
-
-## NG
-
-tax <- subset_samples(psITS18T, Treatment == "NO")
-dat <- sdITS18 %>% filter(Treatment == "NO")
-
-dis <- distance(tax, method = "bray")
-
-pairwise.adonis2(dis ~  GrazeTime,
-                 data = dat,
-                 p.adjust.m = "bon", perm = 1000) ## no differences
-
-# Ordinate
-ord <- ordinate(tax, method = "NMDS", distance = "bray", k = 2, 
-                trymax = 1000, previousBest = TRUE) 
-stressplot(ord, dis) #OK with 2 dimensions
-eft <- envfit(ord, env = dat, perm = 1000, na.rm = TRUE)
-eft
-
-# PNOt - WITH LABELS
-## 1.  get NMDS coordinates from ordination object
-coords <- as.data.frame(scores(ord, display = "sites")) %>% 
-  # and add grouping variable
-  mutate(Treatment = dat$Treatment,
-         Time = dat$GrazeTime,
-         Type = dat$sample_type)
-
-## 2.  get significant envfit objects to plot as arrows
-spp <- as.data.frame(scores(eft, display = "vectors")) 
-spp$species <- rownames(spp)
-# subset to only p < 0.05 vectors to de-clutter 
-sigs <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
-sigspecies <- rownames(sigs)
-# subset
-sigspecies <- spp %>% filter(species %in% sigspecies)
-
-## 3. Pull ellipse information using gg_ordiplot package
-# save gg_ordiplot object to get ellipse values
-plot <-  gg_ordiplot(ord, groups = dat$GrazeTime, label = FALSE, plot = FALSE)
-# get ellipse coordinates
-df_ell <- plot$df_ellipse
-# get label coordinates for ellipse centers
-NMDS.mean <- plot$df_mean.ord
-# pull NMDS coordinates
-ord.data <- plot$df_ord 
-
-## PNOt by TIME - WITH LABELS
-## create in ggplot2
-ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
-  # ELLIPSES
-  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
-  # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
-  # GROUP NAMES AT ELLIPSE CENTER 
-  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
-  # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
-  # ARROW TEXT
-  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-            size = 3) +
-  # SCALE CORRECTLY
-  coord_fixed() +
-  # THEME
-  theme_bw() +
-  # CHANGE LEGEND TITLE
-  labs(color = "Sampling Time") +
-  # add constant colors for each Time
-  scale_color_manual(values = timecols)
-
-## PNOt by Time - WITHOUT LABELS
-ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
-  # ELLIPSES
-  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
-  # ORDINATION POINTS
-  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Time), size = 1) +
-  # GROUP NAMES AT ELLIPSE CENTER 
-  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
-  # ENVFIT ARROWS
-  geom_segment(data = sigspecies,
-               aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
-               arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
-  # ARROW TEXT
-  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
-     #       size = 3) +
-  # SCALE CORRECTLY
-  coord_fixed() +
-  # THEME
-  theme_bw() +
-  # CHANGE LEGEND TITLE
-  labs(color = "Sampling Time") +
-  # add constant colors for each Time
-  scale_color_manual(values = timecols)
-# save
-#ggsave("./data/plots/NMDS-fungi-NG-nolabels.png", plot = last_plot(), dpi = "print")
-
-```
 
 # 16S
 
@@ -555,7 +269,7 @@ sd16S18$GrazeTime <- factor(sd16S18$GrazeTime, ordered = TRUE,
 # statistical testing
 dis <- distance(ps16S18T, method = "bray")
 
-adonis(dis ~ Treatment * GrazeTime,
+adonis(dis ~ sample_type + Treatment * GrazeTime,
        data = sd16S18, permutations = 999) # only GrazeTime
 pairwise.adonis2(dis ~  GrazeTime * Treatment,
                  data = sd16S18,
@@ -566,6 +280,206 @@ ord <- ordinate(ps16S18T, method = "NMDS", distance = "bray", k = 2,
 stressplot(ord, dis) #OK with 2 dimensions
 eft <- envfit(ord, env = sd16S18, perm = 1000, na.rm = TRUE)
 eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
+
+```
+
+# Treatment 
+
+```{r}
+
+## ALL DATA - TREATMENT
+
+# ordinate
+ord <- ordinate(ps16S18T, method = "NMDS", distance = "bray", k = 2, 
+                trymax = 1000, previousBest = TRUE) 
+stressplot(ord, dis) #OK with 2 dimensions
+#eft <- envfit(ord, env = sd16S18, perm = 1000, na.rm = TRUE)
+#eft #BG, PEROX, Ascomycota, Basidiomycota, factors: Plot, Block, Treatment
+
+
+## 1.  get NMDS coordinates from ordination object
+coords <- as.data.frame(scores(ord, display = "sites")) %>% 
+  # and add grouping variable
+  mutate(Treatment = sd16S18$Treatment,
+         Time = sd16S18$GrazeTime,
+         Type = sd16S18$sample_type)
+
+## 2.  get significant envfit objects to plot as arrows
+spp <- as.data.frame(scores(eft, display = "vectors")) 
+spp$species <- rownames(spp)
+# subset to only p < 0.05 vectors to de-clutter 
+sigs <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+sigspecies <- rownames(sigs)
+# subset
+sigspecies <- spp %>% filter(species %in% sigspecies)
+
+## 3. Pull ellipse information using gg_ordiplot package
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sd16S18$Treatment, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+
+## 4. PLOT BY TREATMENT
+## create in ggplot2
+ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
+  # ELLIPSES
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  # ORDINATION POINTS
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Time, color = Treatment), size = 1) +
+  # GROUP NAMES AT ELLIPSE CENTER 
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  # ENVFIT ARROWS
+  #geom_segment(data = sigspecies,
+   #            aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+    #           arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  # ARROW TEXT
+  geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+            size = 3) +
+  # SCALE CORRECTLY
+  coord_fixed() +
+  # THEME
+  theme_bw() +
+  # CHANGE LEGEND TITLE
+  labs(color = "Treatment", shape = "Time")
+# save
+#ggsave("./data/plots/NMDS-fungi-Treatment-labels.png", plot = last_plot(), dpi = "print")
+
+## WITHOUT LABELS - also need to rename factor levels
+coords$Treatment <- fct_recode(coords$Treatment, HDG = "HI", LDG = "LO", NG = "NO")
+df_ell$Group <-fct_recode(df_ell$Group, HDG = "HI", LDG = "LO", NG = "NO")
+
+## 4. PLOT BY TREATMENT
+## create in ggplot2
+ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
+  # ELLIPSES
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  # ORDINATION POINTS
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Time, color =  Treatment), size = 1) +
+  # SCALE CORRECTLY
+  coord_fixed() +
+  # THEME
+  theme_bw() +
+  # CHANGE LEGEND TITLE
+  labs(color = "Treatment", shape = "Sampling Time") +
+  # colors for each treatment
+  scale_color_manual(values = treatmentcols)
+# save
+#ggsave("./data/plots/NMDS-bacteria-Treatment-noarrows-nolabels.png", plot = last_plot(), dpi = 300, height = 4.67, width = 6.48, units = "in")
+```
+
+# Time 
+
+```{r}
+## All data - TIME
+
+
+# plot by TIME
+
+## 1.  get NMDS coordinates from ordination object
+coords <- as.data.frame(scores(ord, display = "sites")) %>% 
+  # and add grouping variable
+  mutate(Treatment = sd16S18$Treatment,
+         Time = sd16S18$GrazeTime,
+         Type = sd16S18$sample_type)
+
+## 2.  get significant envfit objects to plot as arrows
+spp <- as.data.frame(scores(eft, display = "vectors")) 
+spp$species <- rownames(spp)
+# subset to only p < 0.05 vectors to de-clutter 
+sigs <- data.frame(eft$vectors$arrows[eft$vectors$pvals < 0.05,])
+sigspecies <- rownames(sigs)
+# subset
+sigspecies <- spp %>% filter(species %in% sigspecies)
+
+## 3. Pull ellipse information using gg_ordiplot package
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sd16S18$GrazeTime, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+
+## WITHOUT LABELS - also need to rename factor levels
+coords$Treatment <- fct_recode(coords$Treatment, HDG = "HI", LDG = "LO", NG = "NO")
+df_ell$Group <-fct_recode(df_ell$Group, HDG = "HI", LDG = "LO", NG = "NO")
+
+## 4. PLOT BY TREATMENT
+## create in ggplot2
+## 4. PLOT BY TREATMENT
+## create in ggplot2
+ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
+  # ELLIPSES
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  # ORDINATION POINTS
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, shape = Treatment, color = Time), size = 1) +
+  # GROUP NAMES AT ELLIPSE CENTER 
+  #annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  # ENVFIT ARROWS
+  #geom_segment(data = sigspecies,
+  #             aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+   #            arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  # ARROW TEXT
+  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+  #         size = 3) +
+  # SCALE CORRECTLY
+  coord_fixed() +
+  # THEME
+  theme_bw() +
+  # CHANGE LEGEND TITLE
+  labs(color = "Time", shape = "Treatment") +
+  # colors for each treatment
+  scale_color_manual(values = timecols)
+# save
+#ggsave("./data/plots/NMDS-bacteria-Time-noarrows-nolabels.png", plot = last_plot(), dpi = 300, height = 4.67, width = 6.48, units = "in")
+
+```
+# soil type
+
+```{r}
+## All data - Soil Typ
+
+## 6. PLOT BY SOIL TYPE
+# save gg_ordiplot object to get ellipse values
+plot <-  gg_ordiplot(ord, groups = sd16S18$sample_type, label = FALSE, plot = FALSE)
+# get ellipse coordinates
+df_ell <- plot$df_ellipse
+# get label coordinates for ellipse centers
+NMDS.mean <- plot$df_mean.ord
+# pull NMDS coordinates
+ord.data <- plot$df_ord 
+
+
+## create in ggplot2
+ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
+  # ELLIPSES
+  geom_path(data = df_ell, aes(x = x, y = y, color = Group), show.legend = FALSE) +
+  # ORDINATION POINTS
+  geom_point(data = coords, aes(x = NMDS1, y = NMDS2, color = Type), size = 1) +
+  # ENVFIT ARROWS
+  #geom_segment(data = sigspecies,
+   #            aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2),
+    #           arrow = arrow(length = unit(0.25, "cm")), colour = "grey") +
+  # GROUP NAMES AT ELLIPSE CENTER 
+  annotate("text",x = NMDS.mean$x, y = NMDS.mean$y,label=NMDS.mean$Group, size = 5) +
+  
+  # ARROW TEXT
+  #geom_text(data = sigspecies, aes(x = NMDS1, y = NMDS2, label = species),
+   #         size = 3) +
+  # SCALE CORRECTLY
+  coord_fixed() +
+  # THEME
+  theme_bw() +
+  # CHANGE LEGEND TITLE
+  labs(color = "Soil Type")
+# save
+#ggsave("./data/plots/NMDS-bacteria-soil-type.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
+
 
 ```
 
