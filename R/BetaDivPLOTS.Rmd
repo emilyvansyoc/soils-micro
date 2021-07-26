@@ -432,7 +432,7 @@ ggplot(data = coords, aes(x = NMDS1, y = NMDS2)) + # label axises automatically
   # THEME
   theme_bw() +
   # CHANGE LEGEND TITLE
-  labs(color = "Time", shape = "Treatment") +
+  labs(color = "Sampling Time", shape = "Treatment") +
   # colors for each treatment
   scale_color_manual(values = timecols)
 # save
