@@ -246,12 +246,22 @@ dat1 <- enzlog %>%
 enzl <- paste("AG", "BG", "BX", "CBH", "NAG", "LAP",  "PEROX", "PHENOX", sep = "|")
 plotdat <- dat1 %>% filter(str_detect(enzl, Type))
 
-ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill = Treatment)) +
+p1 <- ggplot(data = filter(plotdat, Time == "post24H"), aes(x = Type, y = value, fill = Treatment)) +
   geom_boxplot() +
   scale_fill_manual(values = treatmentcols) +
   labs(x = "Enzyme", y = "% change from PRE to 24H")
+ggpar(p1, font.x = 14, font.y = 14, font.tickslab = 12)
 # save
-#ggsave("./data/plots/enzymes-24h-HDGspike.png", plot = last_plot(), dpi = 600, width = 6.48, height = 4.67, units = "in")
+#ggsave("./data/plots/enzymes-24h-HDGspike-v2.png", plot = last_plot(), dpi = 600)
+
+### 1WK
+p2 <- ggplot(data = filter(plotdat, Time == "post1WK"), aes(x = Type, y = value, fill = Treatment)) +
+  geom_boxplot() +
+  scale_fill_manual(values = treatmentcols) +
+  labs(x = "Enzyme", y = "% change from PRE to 1WK")
+ggpar(p2, font.x = 14, font.y = 14, font.tickslab = 12)
+# save
+#ggsave("./data/plots/enzymes-1WK-HDGspike-v2.png", plot = last_plot(), dpi = 600)
 
 # get only PHOS b/c it's weird
 enzl <- paste("PHOS")

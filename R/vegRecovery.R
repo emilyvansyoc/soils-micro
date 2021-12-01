@@ -302,7 +302,7 @@ datsum <- datf %>%
   mutate(Time = factor(Time, ordered = TRUE, levels = c("PRE", "24H", "1WK", "4WK")))
 
 ### rebuild the manuscript plot with ggpubr
-ggplot(data = datsum, 
+p <- ggplot(data = datsum, 
        aes(x = Time, y = mean, group = Treatment)) +
   geom_point(aes(color = Treatment, shape = Treatment), size = 4) +
   geom_line(aes(linetype = Treatment, color = Treatment), size = 1.5) +
@@ -318,7 +318,7 @@ ggplot(data = datsum,
     axis.text.x = element_text(angle = 45, hjust = 1)) +
   # add extra white space at top for significance asterisks
   scale_y_continuous(expand = expansion(mult = c(0.1, 0.1), add = c(0, 0)))
-
+ggpar(p, font.x = 14, font.y = 14, font.tickslab = 14)
 # save
-#ggsave("./data/plots/veg-recovery-v3.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
->>>>>>> b37727e7e7184af3e88c21a522a52eba3b6ba05a
+ggsave("./data/plots/veg-recovery-v4.png", plot = last_plot(), dpi = 600 , height = 4.67, width = 6.48, units = "in")
+#>>>>>>> b37727e7e7184af3e88c21a522a52eba3b6ba05a

@@ -62,7 +62,7 @@ sdITS18$GrazeTime <- factor(sdITS18$GrazeTime, ordered = TRUE,
 dis <- distance(psITS18T, method = "bray")
 adonis(dis ~ Treatment * GrazeTime + sample_type,
        data = sdITS18, permutations = 999) # all are significant except Interactions
-pairwise.adonis2(dis ~  GrazeTime * Treatment+ sample_type,
+pairwise.adonis2(dis ~  Treatment * GrazeTime+ sample_type,
                              data = sdITS18,
                              p.adjust.m = "bon", perm = 1000)
  
@@ -262,10 +262,10 @@ dis <- distance(ps16S18T, method = "bray")
 
 adonis(dis ~ Treatment * GrazeTime + sample_type,
        data = sd16S18, permutations = 999) # only GrazeTime
-pairwise.adonis2(dis ~  GrazeTime * Treatment,
+pairwise.adonis2(dis ~  GrazeTime * Treatment + sample_type,
                  data = sd16S18,
                  p.adjust.m = "bon", perm = 1000) # all GrazeTime comparisons are significant
-pairwise.adonis2(dis ~  Treatment * GrazeTime,
+pairwise.adonis2(dis ~  Treatment * GrazeTime + sample_type,
                  data = sd16S18,
                  p.adjust.m = "bon", perm = 1000)  # NG vs HDG difference; likely in the 1WK-4WK time above 
 

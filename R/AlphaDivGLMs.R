@@ -9,7 +9,8 @@ theme_set(theme_bw())
 dat <- read.table("https://raw.githubusercontent.com/EmilyB17/grazing_soil_microbes/master/data/Metabarcoding_AlphaDiversity_All2.txt",
                   sep = "\t", header = TRUE, stringsAsFactors = TRUE) %>% 
   # a priori: Shannon and Observed
-  select(seq, Year, Treatment, GrazeTime, ID, Shannon, Observed) %>% 
+  ## 11/5/21 update: add Chao1
+  select(seq, Year, Treatment, GrazeTime, ID, Shannon, Observed, Chao1) %>% 
   # get Plot and soil type info
   mutate(
     Plot = sapply(str_split(ID, "_"), `[`, 2),
@@ -21,6 +22,26 @@ dat <- read.table("https://raw.githubusercontent.com/EmilyB17/grazing_soil_micro
 # function for standard error
 se <- function(x) sqrt(var(x)/length(x))
 
+### ---- ITS: Chao1 ----
+
+# subset data
+its <- dat %>% filter(seq == "ITS")
+
+# test for normality
+hist(its$Chao1)
+shapiro.test(its$Chao1)
+# ANOVA
+mod <- aov(Chao1 ~ Treatment * GrazeTime * soil_type, data = its) 
+
+# post hoc for soil type difference
+TukeyHSD(mod, which = "soil_type")
+
+# t test for soil type
+t <- t.test(Chao1 ~ soil_type, data = its) ## BULK IS HIGHER
+# plot
+ggplot(data = its, aes(x = soil_type, y = Chao1, fill = soil_type)) +
+  geom_boxplot() +
+  labs(fill = "Soil Type", x = "Soil Type", y = "Chao1")
 
 ### ---- ITS: Observed ----
 
@@ -33,7 +54,10 @@ hist(its$Observed)
 shapiro.test(its$Observed) # good to go
 
 # ANOVA
-mod <- aov(Observed ~ Treatment * GrazeTime, data = its) 
+mod <- aov(Observed ~ Treatment * GrazeTime * soil_type, data = its) 
+
+# post hoc for soil type
+TukeyHSD(mod, which = "soil_type")
 
 # t test for soil type
 t <- t.test(Observed ~ soil_type, data = its) ## BULK IS HIGHER
@@ -82,7 +106,7 @@ hist(its$Shannon)
 shapiro.test(its$Shannon) # not normal
 
 # GLM
-summary(glm(Shannon ~ Treatment * GrazeTime, data = its))
+summary(glm(Shannon ~ Treatment * GrazeTime * soil_type, data = its))
 
 # Wilcox rank-sum test
 wilcox.test(Shannon ~ soil_type, data = its)
@@ -101,6 +125,19 @@ ggplot(data = its, aes(x = soil_type, y = Shannon, fill = soil_type)) +
 #ggsave("./data/plots/shannon-fungi.png", plot = last_plot(), dpi = 600, height = 4.67, width = 6.48, units = "in")
 
 
+### ---- 16S: Chao1 ----
+
+# subset data
+bac <- dat %>% filter(seq == "16S")
+
+# test for normality
+hist(bac$Chao1)
+shapiro.test(bac$Chao1)
+# ANOVA
+mod <- aov(Chao1 ~ Treatment * GrazeTime * soil_type, data = bac) #none
+
+# t test for soil type
+t <- t.test(Chao1 ~ soil_type, data = bac) ## no diffs
 
 ### --- 16S: Observed ----
 
@@ -112,7 +149,7 @@ hist(bac$Observed)
 shapiro.test(bac$Observed) # not normal
 
 # GLM
-summary(glm(Observed ~ Treatment * GrazeTime, data = bac))
+summary(glm(Observed ~ Treatment * GrazeTime * soil_type, data = bac)) #none
 
 # Wilcox
 wilcox.test(Observed ~ soil_type, data = bac, exact = FALSE)
@@ -142,7 +179,7 @@ hist(bac$Shannon)
 shapiro.test(bac$Shannon) # not normal
 
 # GLM
-summary(glm(Shannon ~ Treatment * GrazeTime, data = bac))
+summary(glm(Shannon ~ Treatment * GrazeTime * soil_type, data = bac)) # none
 
 # Wilcox
 wilcox.test(Shannon ~ soil_type, data = bac, exact = FALSE)
